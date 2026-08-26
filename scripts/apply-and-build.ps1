@@ -1,6 +1,6 @@
-# apply-and-build.ps1 — Aplica o patch pt-BR e faz build do DSH
+﻿# apply-and-build.ps1 â€” Aplica o patch pt-BR e faz build do DSH
 # Uso: .\scripts\apply-and-build.ps1 -DshPath "C:\Users\seuusuario\deepseek-harness"
-# Ou sem argumentos (procura o DSH no diretório irmão): .\scripts\apply-and-build.ps1
+# Ou sem argumentos (procura o DSH no diretÃ³rio irmÃ£o): .\scripts\apply-and-build.ps1
 
 param(
   [string]$DshPath = ''
@@ -12,13 +12,13 @@ $projDir  = Split-Path -Parent $scriptDir
 $patchFile = Join-Path $projDir 'pt-br.patch'
 
 if (-not (Test-Path $patchFile)) {
-  Write-Host "ERRO: pt-br.patch não encontrado em $patchFile" -ForegroundColor Red
+  Write-Host "ERRO: pt-br.patch nÃ£o encontrado em $patchFile" -ForegroundColor Red
   exit 1
 }
 
 # Resolve DSH path
 if ($DshPath -eq '') {
-  # Procura no diretório irmão: ../deepseek-harness
+  # Procura no diretÃ³rio irmÃ£o: ../deepseek-harness
   $sibling = Join-Path (Split-Path $projDir -Parent) 'deepseek-harness'
   if (Test-Path $sibling) { $DshPath = $sibling }
   else {
@@ -28,13 +28,13 @@ if ($DshPath -eq '') {
 }
 
 if (-not (Test-Path $DshPath)) {
-  Write-Host "ERRO: diretório DSH não encontrado em $DshPath" -ForegroundColor Red
+  Write-Host "ERRO: diretÃ³rio DSH nÃ£o encontrado em $DshPath" -ForegroundColor Red
   exit 1
 }
 
-Write-Host "╔══════════════════════════════════════════════╗"
-Write-Host "║  pt-br-dsh: aplicando e buildando           ║"
-Write-Host "╚══════════════════════════════════════════════╝"
+Write-Host "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+Write-Host "â•‘  pt-br-dsh: aplicando e buildando           â•‘"
+Write-Host "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
 Write-Host ""
 
 # Step 1: Apply patch
@@ -55,11 +55,11 @@ try {
 
 # Step 2: Install deps
 Write-Host ""
-Write-Host "[2/3] Instalando dependências..." -ForegroundColor Cyan
+Write-Host "[2/3] Instalando dependÃªncias..." -ForegroundColor Cyan
 Push-Location $DshPath
 try {
   pnpm install
-  Write-Host "  Dependências instaladas." -ForegroundColor Green
+  Write-Host "  DependÃªncias instaladas." -ForegroundColor Green
 } finally {
   Pop-Location
 }
@@ -71,15 +71,15 @@ Push-Location $DshPath
 try {
   pnpm run build
   Write-Host ""
-  Write-Host "╔══════════════════════════════════════════════╗"
-  Write-Host "║  Build concluído com sucesso!                ║"
-Write-Host "║                                              ║"
-  Write-Host "║  Para rodar: cd $DshPath                    ║"
-  Write-Host "║  pnpm dsh web                                 ║"
-  Write-Host "║                                              ║"
-  Write-Host "║  Depois selecione Português (BR) em          ║"
-  Write-Host "║  Configurações > Geral > Idioma              ║"
-  Write-Host "╚══════════════════════════════════════════════╝"
+  Write-Host "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+  Write-Host "â•‘  Build concluÃ­do com sucesso!                â•‘"
+Write-Host "â•‘                                              â•‘"
+  Write-Host "â•‘  Para rodar: cd $DshPath                    â•‘"
+  Write-Host "â•‘  pnpm dsh web                                 â•‘"
+  Write-Host "â•‘                                              â•‘"
+  Write-Host "â•‘  Depois selecione PortuguÃªs (BR) em          â•‘"
+  Write-Host "â•‘  ConfiguraÃ§Ãµes > Geral > Idioma              â•‘"
+  Write-Host "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
   Write-Host ""
 } finally {
   Pop-Location

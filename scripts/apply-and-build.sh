@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-# apply-and-build.sh — Aplica o patch pt-BR e faz build do DSH
+﻿#!/usr/bin/env bash
+# apply-and-build.sh â€” Aplica o patch pt-BR e faz build do DSH
 # Uso: bash scripts/apply-and-build.sh [caminho-para-dsh]
 # Se omitido, procura em ../deepseek-harness
 
@@ -10,7 +10,7 @@ PROJ_DIR="$(dirname "$SCRIPT_DIR")"
 PATCH_FILE="$PROJ_DIR/pt-br.patch"
 
 if [[ ! -f "$PATCH_FILE" ]]; then
-  echo "ERRO: pt-br.patch não encontrado em $PATCH_FILE" >&2
+  echo "ERRO: pt-br.patch nÃ£o encontrado em $PATCH_FILE" >&2
   exit 1
 fi
 
@@ -27,13 +27,13 @@ if [[ -z "$DSH_PATH" ]]; then
 fi
 
 if [[ ! -d "$DSH_PATH" ]]; then
-  echo "ERRO: diretório DSH não encontrado em $DSH_PATH" >&2
+  echo "ERRO: diretÃ³rio DSH nÃ£o encontrado em $DSH_PATH" >&2
   exit 1
 fi
 
-echo "╔══════════════════════════════════════════════╗"
-echo "║  pt-br-dsh: aplicando e buildando           ║"
-echo "╚══════════════════════════════════════════════╝"
+echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+echo "â•‘  pt-br-dsh: aplicando e buildando           â•‘"
+echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
 echo ""
 
 # Step 1: Apply patch
@@ -43,9 +43,9 @@ echo "  Patch aplicado com sucesso."
 
 # Step 2: Install deps
 echo ""
-echo "[2/3] Instalando dependências..."
+echo "[2/3] Instalando dependÃªncias..."
 pnpm --dir "$DSH_PATH" install
-echo "  Dependências instaladas."
+echo "  DependÃªncias instaladas."
 
 # Step 3: Build
 echo ""
@@ -53,12 +53,12 @@ echo "[3/3] Fazendo build..."
 pnpm --dir "$DSH_PATH" run build
 
 echo ""
-echo "╔══════════════════════════════════════════════╗"
-echo "║  Build concluído com sucesso!                ║"
-echo "║                                              ║"
-echo "║  Para rodar: cd $DSH_PATH                    ║"
-echo "║  pnpm dsh web                                 ║"
-echo "║                                              ║"
-echo "║  Depois selecione Português (BR) em          ║"
-echo "║  Configurações > Geral > Idioma              ║"
-echo "╚══════════════════════════════════════════════╝"
+echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+echo "â•‘  Build concluÃ­do com sucesso!                â•‘"
+echo "â•‘                                              â•‘"
+echo "â•‘  Para rodar: cd $DSH_PATH                    â•‘"
+echo "â•‘  pnpm dsh web                                 â•‘"
+echo "â•‘                                              â•‘"
+echo "â•‘  Depois selecione PortuguÃªs (BR) em          â•‘"
+echo "â•‘  ConfiguraÃ§Ãµes > Geral > Idioma              â•‘"
+echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
