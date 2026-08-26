@@ -4,58 +4,93 @@ Traduz o frontend do [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-
 
 Suporta **todas as 24 namespaces** da UI (conversation, workspace, subagent, settings-models, settings-plugins, etc.) — dicionários completos, não fallbacks.
 
-## Uso rápido
+## Instalação rápida (via GitHub — sem precisar clonar este repositório)
 
-```bash
-# 1. Clone o DSH (se ainda não tiver)
-git clone https://github.com/deepseek-ai/deepseek-harness.git
-cd deepseek-harness
-
-# 2. Aplique o patch pt-BR (do repositório pt-br-dsh)
-git apply ../pt-br-dsh/pt-br.patch
-
-# 3. Instale dependências e faça o build
+**Windows (PowerShell):**
+```powershell
+Invoke-WebRequest https://raw.githubusercontent.com/paulomec/pt-br-dsh/master/pt-br.patch -OutFile pt-br.patch
+cd C:\caminhoh\para\deepseek-harness
+git apply ..\pt-br.patch
 pnpm install
 pnpm run build
+```
 
-# 4. Rode
+**Linux / macOS:**
+```bash
+curl -LO https://raw.githubusercontent.com/paulomec/pt-br-dsh/master/pt-br.patch
+cd /caminho/para/deepseek-harness
+git apply ../pt-br.patch
+pnpm install
+pnpm run build
+```
+
+Depois: `pnpm dsh web` → Configurações → Geral → Idioma → **Português (BR)**.
+
+## Instalação automática (script tudo-em-um)
+
+**Windows:**
+```powershell
+powershell -Command "iwr -useb https://raw.githubusercontent.com/paulomec/pt-br-dsh/master/scripts/install.ps1 | iex" -ArgumentList "C:\caminhoh\para\deepseek-harness"
+```
+
+**Linux / macOS:**
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/paulomec/pt-br-dsh/master/scripts/install.sh) /caminho/para/deepseek-harness
+```
+
+## Instalação local (clone + patch + build)
+
+```bash
+git clone https://github.com/deepseek-ai/deepseek-harness.git
+cd deepseek-harness
+git apply ../pt-br-dsh/pt-br.patch
+pnpm install
+pnpm run build
 pnpm dsh web
 ```
 
-Depois, nas Configurações → Geral → Idioma, selecione **Português (BR)**.
+Ou via script:
 
-## Detalhes
+```powershell
+# Windows
+.\scripts\apply-and-build.ps1 -DshPath "C:\Users\seuusuario\deepseek-harness"
+```
 
-### O que o patch altera
+```bash
+# Linux/macOS
+bash scripts/apply-and-build.sh /caminho/para/deepseek-harness
+```
 
-- `packages/client/locale/` — sistema de locale: adiciona `pt` ao `LOCALE_IDS`, cria o dicionário `common` (`pt.ts`), registra `Português (BR)` na lista de idiomas, define `<html lang="pt-BR">`.
-- `packages/client/ui-*` — 24 pacotes de UI recebem dicionários pt-BR e seus calls de `locale.register()` são atualizados.
-- Arquivos compilados (`lib/`) precisam ser rebuildados via `pnpm run build` (o patch só altera a fonte `.ts`).
+## O que o patch altera
 
-### Requisitos
+- `packages/client/locale/` — adiciona `pt` ao `LOCALE_IDS`, dicionário `common` (`pt.ts`), lista de idiomas, `<html lang="pt-BR">`.
+- `packages/client/ui-*` — 24 pacotes com dicionários pt-BR completos.
+- Arquivos `lib/` são gerados pelo `pnpm run build`.
 
-- Node.js 22+ e pnpm (gerenciador de pacotes do DSH)
-- O patch foi gerado contra a versão principal do DSH. Se o repositório tiver divergido muito, pode ser necessário ajustar o patch manualmente.
+## Requisitos
 
-### Estrutura
+- Node.js 22+ e pnpm
+- Patch gerado contra `main` do DSH
+
+## Estrutura
 
 ```
 pt-br-dsh/
-├── README.md          # este arquivo
-├── pt-br.patch        # git diff para aplicar ao DSH
+├── README.md
+├── pt-br.patch
 └── scripts/
-    ├── apply-and-build.sh   # Linux/macOS
-    └── apply-and-build.ps1  # Windows
+    ├── apply-and-build.ps1      # patch + build (Windows)
+    ├── apply-and-build.sh       # patch + build (Linux/macOS)
+    ├── install.ps1              # instalação via GitHub (Windows)
+    └── install.sh               # instalação via GitHub (Linux/macOS)
 ```
 
-## Para desenvolvedores
+## Desenvolvimento
 
-Para modificar as traduções, edite os arquivos `locales.ts` nos pacotes `packages/client/ui-*/src/client/` e o `locale/src/locales/pt.ts`. Depois reconstrua:
+Para editar traduções: edite os `locales.ts` nos pacotes e o `locale/src/locales/pt.ts`, depois:
 
 ```bash
-# Apenas o pacote que mudou
-cd packages/client/ui-conversation && pnpm exec tsdown
-
-# Ou tudo de uma vez
-pnpm run build
+cd packages/client/ui-conversation && pnpm exec tsdown   # pacote específico
+# ou
+pnpm run build                                            # rebuild geral
 ```
