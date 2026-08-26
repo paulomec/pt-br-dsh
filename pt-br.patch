@@ -1,0 +1,1618 @@
+diff --git a/packages/client/locale/src/client/index.ts b/packages/client/locale/src/client/index.ts
+index 5b1d6c72b4..ed0d32b09f 100644
+--- a/packages/client/locale/src/client/index.ts
++++ b/packages/client/locale/src/client/index.ts
+@@ -21,9 +21,9 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+ import {
+   LOCALE_PREFERENCE_FIELD, LOCALE_SETTINGS_NAMESPACE, type LocaleId, type LocaleSettings,
+ } from '../locale-settings.ts'
+-import { en, zh, type CommonKey } from '../locales/index.ts'
++import { en, zh, pt, type CommonKey } from '../locales/index.ts'
+ import {
+-  en as settingsEn, zh as settingsZh, type SettingsLocaleKey,
++  en as settingsEn, zh as settingsZh, pt as settingsPt, type SettingsLocaleKey,
+ } from '../locales/settings.ts'
+ import type { LanguageRowInjected } from './LanguageRow.tsx'
+ import { LanguageRow } from './LanguageRow.tsx'
+@@ -103,10 +103,11 @@ export const COMMON_NS = 'common'
+ /** Namespace owning this feature's settings-row copy. */
+ export const SETTINGS_NS = 'settings.locale'
+ 
+-/** The two shipped locales. */
++/** The three shipped locales. */
+ const LOCALES: readonly LocaleDefinition[] = Object.freeze([
+   { id: 'zh', label: '中文' },
+   { id: 'en', label: 'English' },
++  { id: 'pt', label: 'Português (BR)' },
+ ])
+ 
+ /**
+@@ -117,7 +118,7 @@ const LOCALES: readonly LocaleDefinition[] = Object.freeze([
+  * behavior. `zh` alone leaves the script ambiguous, so the shipped Chinese
+  * copy names the variant it actually is.
+  */
+-const DOCUMENT_LANGUAGE: Record<LocaleId, string> = { zh: 'zh-CN', en: 'en' }
++const DOCUMENT_LANGUAGE: Record<LocaleId, string> = { zh: 'zh-CN', en: 'en', pt: 'pt-BR' }
+ 
+ /**
+  * Point `<html lang>` at the active locale. Called on every locale change,
+@@ -392,8 +393,8 @@ export const inject = ['slots', 'connection', 'remote', 'settingsScope']
+ export function apply(ctx: ClientContext): void {
+   const host = ctx.settingsScope.bind<LocaleSettings>({ namespace: LOCALE_SETTINGS_NAMESPACE })
+   const locale = new LocaleRuntime(ctx, host)
+-  locale.register(COMMON_NS, { zh, en })
+-  locale.register(SETTINGS_NS, { zh: settingsZh, en: settingsEn })
++  locale.register(COMMON_NS, { zh, en, pt })
++  locale.register(SETTINGS_NS, { zh: settingsZh, en: settingsEn, pt: settingsPt })
+   ctx.provide('locale', locale)
+   // The service IS the LocaleFace (bind + getSnapshot/subscribe): install it
+   // so the render machinery can synthesize the `t` standard seat.
+diff --git a/packages/client/locale/src/locale-settings.ts b/packages/client/locale/src/locale-settings.ts
+index 9733714502..8a27006d04 100644
+--- a/packages/client/locale/src/locale-settings.ts
++++ b/packages/client/locale/src/locale-settings.ts
+@@ -9,7 +9,7 @@ export const LOCALE_SETTINGS_NAMESPACE = 'locale'
+ export const LOCALE_PREFERENCE_FIELD = 'preference'
+ 
+ /** Locale identifiers shipped by the browser client. */
+-export const LOCALE_IDS = ['zh', 'en'] as const
++export const LOCALE_IDS = ['zh', 'en', 'pt'] as const
+ 
+ /** Shipped locale identifier. */
+ export type LocaleId = typeof LOCALE_IDS[number]
+diff --git a/packages/client/locale/src/locales/index.ts b/packages/client/locale/src/locales/index.ts
+index 6ac5335f5b..7d2460ea59 100644
+--- a/packages/client/locale/src/locales/index.ts
++++ b/packages/client/locale/src/locales/index.ts
+@@ -1,8 +1,9 @@
+ /**
+- * The common-namespace dictionary pair. zh is the source of truth for the
+- * key set (Chinese-first repo convention); en is checked complete against it
+- * — a missing or extra en key is a compile error.
++ * The common-namespace dictionary trio. zh is the source of truth for the
++ * key set (Chinese-first repo convention); en and pt are checked complete
++ * against it — a missing or extra key is a compile error.
+  */
+ export { zh } from './zh.ts'
+ export { en } from './en.ts'
++export { pt } from './pt.ts'
+ export type { CommonKey } from './zh.ts'
+diff --git a/packages/client/locale/src/locales/settings.ts b/packages/client/locale/src/locales/settings.ts
+index 0419b60095..fd803335c6 100644
+--- a/packages/client/locale/src/locales/settings.ts
++++ b/packages/client/locale/src/locales/settings.ts
+@@ -12,3 +12,8 @@ export type SettingsLocaleKey = keyof typeof zh
+ export const en = {
+   'language.title': 'Language',
+ } satisfies Record<SettingsLocaleKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'language.title': 'Idioma',
++} satisfies Record<SettingsLocaleKey, string>
+diff --git a/packages/client/ui-agent-preset/src/client/index.ts b/packages/client/ui-agent-preset/src/client/index.ts
+index e28039fe45..5da7740e54 100644
+--- a/packages/client/ui-agent-preset/src/client/index.ts
++++ b/packages/client/ui-agent-preset/src/client/index.ts
+@@ -31,7 +31,7 @@ import type { AgentPresetSectionInjected } from './AgentPresetSection.tsx'
+ import { AgentPresetSeatController } from './seat-store.ts'
+ import type { SeatSessionSummary } from './seat-store.ts'
+ import { AgentPresetSectionController } from './section-store.ts'
+-import { en, zh } from './locales.ts'
++import { en, pt, zh } from './locales.ts'
+ import { AGENT_PRESET_SETTINGS_NS, AgentPresetSettingsController } from './settings-store.ts'
+ 
+ export type { AgentPresetLabelInjected, AgentPresetLabelProps } from './AgentPresetLabel.tsx'
+@@ -63,7 +63,7 @@ export function apply(ctx: ClientContext): void {
+     for (const read of rosterReaders) read()
+   })
+ 
+-  ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en }), 'ui-agent-preset: settings row dictionaries')
++  ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en, pt }), 'ui-agent-preset: settings row dictionaries')
+ 
+   const injected = (): AgentPresetRowInjected => ({
+     hooks: { agentPreset: controller.store },
+diff --git a/packages/client/ui-agent-preset/src/client/locales.ts b/packages/client/ui-agent-preset/src/client/locales.ts
+index de19803a29..fe62748266 100644
+--- a/packages/client/ui-agent-preset/src/client/locales.ts
++++ b/packages/client/ui-agent-preset/src/client/locales.ts
+@@ -141,6 +141,72 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
+   deleting: '正在删除…',
+ }
+ 
++/** Brazilian Portuguese copy. */
++export const pt: Record<AgentPresetSettingsKey, string> = {
++  title: 'Preset do agente',
++  description: 'Aplica-se às sessões que você iniciar a partir de agora. Sessões em execução mantêm o preset com que começaram.',
++  loading: 'Carregando presets…',
++  error: 'Não foi possível carregar os presets do agente.',
++  userTrust: 'Personalizado',
++  seatHint: 'Preset do agente para a sessão que você está prestes a iniciar',
++  headerHint: 'O preset do agente desta sessão, fixo quando ela começou',
++  nav: 'Presets do agente',
++  sectionIntro:
++    'Um preset é a composição de plugins que o agente de uma sessão executa — suas ferramentas, prompt e capacidades. '
++    + 'Duplique um existente e faça-o seu, ou deixe o agente criar um para você no modo Creator.',
++  builtIn: 'Integrado',
++  setDefault: 'Definir como padrão',
++  view: 'Ver',
++  presetStandardName: 'Modo padrão',
++  presetStandardDescription:
++    'Agente de codificação completo com edição de arquivos, shell, busca de arquivos e web, skills, planejamento, objetivos, subagentes e fluxos de trabalho.',
++  presetCodeName: 'Modo PTC',
++  presetCodeDescription:
++    'Todas as capacidades do Modo padrão, com ferramentas expostas através do Code Mode SDK para o modelo combinar operações em múltiplas etapas em um programa TypeScript.',
++  presetMinimalName: 'Modo mínimo',
++  presetMinimalDescription:
++    'Agente de codificação de duas ferramentas com bash persistente e str_replace_editor.',
++  presetCordisName: 'Modo Creator',
++  presetCordisDescription:
++    'Feito para criar presets personalizados de agente, com todas as capacidades do Modo padrão além de inspeção em tempo real, experimentos de plugin e orientação para autoria de preset.',
++  duplicate: 'Duplicar',
++  duplicateUnavailable: 'Esta implantação não tem um diretório de preset gravável',
++  delete: 'Excluir',
++  presetId: 'Identificador',
++  presetIdPlaceholder: 'meu-agente',
++  displayName: 'Nome',
++  displayNamePlaceholder: 'Exibido no seletor; padrão é o identificador',
++  inUse: 'Em uso',
++  builtInGroup: 'Integrado',
++  customGroup: 'Personalizado',
++  noDescription: 'Sem descrição.',
++  brokenBadge: 'Falha ao carregar',
++  brokenNoCopy: 'Um preset que falhou ao carregar não pode ser duplicado',
++  copyOf: 'Copiado de',
++  composition: 'Composição (agent.cordis.yml)',
++  cancel: 'Cancelar',
++  close: 'Fechar',
++  retry: 'Tentar novamente',
++  copyTitle: 'Duplicar preset',
++  copyIntro:
++    'O preset inteiro é copiado nesta máquina. O identificador se torna o nome do diretório e não pode '
++    + 'ser alterado depois; tudo o mais é editado nos próprios arquivos do preset.',
++  create: 'Criar',
++  creating: 'Criando…',
++  creatorDraft: 'Rascunhar um preset personalizado com o modo Creator',
++  openLocation: 'Abrir pasta',
++  showLocation: 'Mostrar localização',
++  revealedPathLabel: 'Arquivos do preset:',
++  idRequired: 'Dê ao preset um identificador.',
++  idInvalid: 'Use letras minúsculas, dígitos e hífens, começando com uma letra ou dígito.',
++  idTaken: 'Já existe um preset com este identificador.',
++  deleteTitle: 'Excluir este preset?',
++  deleteDescription:
++    'O diretório do preset é excluído. Sessões já em execução nele continuam funcionando; novas sessões não podem selecioná-lo.',
++  deleteConfirm: 'Excluir',
++  deleting: 'Excluindo…',
++}
++
+ /** Preset roster fields needed to resolve Web display copy. */
+ export interface PresetDisplaySource {
+   /** Stable preset id. */
+diff --git a/packages/client/ui-commands/src/client/index.ts b/packages/client/ui-commands/src/client/index.ts
+index bc8e2ca7fc..641dbe957c 100644
+--- a/packages/client/ui-commands/src/client/index.ts
++++ b/packages/client/ui-commands/src/client/index.ts
+@@ -15,7 +15,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ import { CommandUiRuntime } from './service.ts'
+ import type { PopupSelectInjected } from './PopupSelectView.tsx'
+ import { PopupSelectView } from './PopupSelectView.tsx'
+-import { en, zh, type CommandKey } from './locales.ts'
++import { en, pt, zh, type CommandKey } from './locales.ts'
+ 
+ export { CommandUiRuntime } from './service.ts'
+ export { CommandDirectory } from './directory.ts'
+@@ -53,7 +53,7 @@ export const inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands',
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-commands: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-commands: dictionaries')
+   ctx.plugin(CommandUiRuntime)
+   ctx.inject(['slots', 'commandUi', 'sessions'], (scope: ClientContext) => {
+     const command = scope.commandUi
+diff --git a/packages/client/ui-commands/src/client/locales.ts b/packages/client/ui-commands/src/client/locales.ts
+index 1d04fe7eb7..b1ffe160aa 100644
+--- a/packages/client/ui-commands/src/client/locales.ts
++++ b/packages/client/ui-commands/src/client/locales.ts
+@@ -26,3 +26,15 @@ export const en = {
+   'listbox.aria': '/{command} matches',
+   'notice.imagesUnsupported': '/{command} does not accept image attachments; remove them first',
+ } satisfies Record<CommandKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'search.placeholder': 'Pesquisar…',
++  'search.aria': 'Filtrar opções',
++  'status.loading': 'Carregando opções…',
++  'status.applying': 'Aplicando…',
++  'status.empty': 'Nenhuma opção',
++  'overlay.aria': 'Opções de /{command}',
++  'listbox.aria': 'Resultados de /{command}',
++  'notice.imagesUnsupported': '/{command} não aceita anexos de imagem; remova-os primeiro',
++} satisfies Record<CommandKey, string>
+diff --git a/packages/client/ui-conversation/src/client/apply.ts b/packages/client/ui-conversation/src/client/apply.ts
+index 7920104d68..0cf2244f08 100644
+--- a/packages/client/ui-conversation/src/client/apply.ts
++++ b/packages/client/ui-conversation/src/client/apply.ts
+@@ -35,7 +35,7 @@ import { queueDockEntry } from './queue/QueueDock.tsx'
+ import { ConversationRoot } from './skeleton/ConversationRoot.tsx'
+ import { ConversationSession, ConversationSessionHeader } from './skeleton/ConversationSession.tsx'
+ import { DetailsPanel } from './skeleton/DetailsPanel.tsx'
+-import { en, NS, zh, type ConversationKey } from './locales.ts'
++import { en, NS, pt, zh, type ConversationKey } from './locales.ts'
+ import { registerConversationNodes } from './conversation-nodes/register.ts'
+ import { registerChatNodeRenderers } from './chat/register-node-renderers.ts'
+ import { CONVERSATION_SETTINGS_NAMESPACE, type ConversationSettings } from '../submission-settings.ts'
+@@ -121,7 +121,7 @@ export function apply(ctx: Context): void {
+   registerConversationNodes(ctx)
+   registerChatNodeRenderers(ctx)
+ 
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-conversation: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-conversation: dictionaries')
+ 
+   // Registration-time text (the view tab label) reads through the bound
+   // translate as a thunk, so it follows the active locale without
+diff --git a/packages/client/ui-conversation/src/client/locales.ts b/packages/client/ui-conversation/src/client/locales.ts
+index f4e7a7c59a..08b18feed9 100644
+--- a/packages/client/ui-conversation/src/client/locales.ts
++++ b/packages/client/ui-conversation/src/client/locales.ts
+@@ -358,3 +358,177 @@ export const en = {
+   'clock.md': '{m}/{d}',
+   'clock.ymd': '{y}-{m}-{d}',
+ } satisfies Record<ConversationKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'view.chat': 'Chat',
++  'hint.plan': 'descreva sua tarefa para gerar um plano',
++  'hint.goal': 'descreva o objetivo para uma tarefa de longa duração',
++  'hint.goal.active': 'objetivo ativo — editar / pausar / retomar / limpar',
++  'placeholder.plan': 'descreva sua tarefa para gerar um plano',
++  'placeholder.default': 'Mensagem ao agente',
++  'placeholder.unavailable': 'Sessão indisponível',
++  'placeholder.parentOffline': 'Sessão pai offline; envio indisponível, mas você ainda pode parar a execução',
++  'placeholder.hero': 'Descreva o que deseja construir',
++  'placeholder.workspace': 'Escolha um espaço de trabalho para começar',
++  'input.commands': 'Comandos',
++  'input.stop': 'Parar geração',
++  'input.send': 'Enviar mensagem',
++  'placeholder.steerQueue': 'Cmd/Ctrl+Enter intercepta todas as mensagens em fila',
++  'input.accessMode': 'Modo de acesso, atual: {name}',
++  'image.dropTitle': 'Arraste imagens aqui para adicioná-las',
++  'image.dropDesc': 'Até {count} imagens, {size} cada',
++  'image.dropBlocked': 'Imagens não podem ser adicionadas agora',
++  'image.pending': 'Imagens pendentes',
++  'image.openOriginal': 'Ver original',
++  'image.openOriginalLabel': '{label}, clique para ver o original',
++  'image.remove': 'Remover imagem {name}',
++  'image.scrollLeft': 'Rolar imagens para a esquerda',
++  'image.scrollRight': 'Rolar imagens para a direita',
++  'image.original': 'Imagem original',
++  'image.label': 'Imagem',
++  'image.loadFailed': 'Falha ao carregar a imagem; clique para tentar novamente',
++  'image.loading': 'Carregando imagem…',
++  'image.preview': 'Visualização da imagem original',
++  'image.closePreview': 'Fechar visualização da imagem original',
++  'image.serviceUnavailable': 'Serviço de carregamento de imagens indisponível',
++  'image.unsupportedType': 'Apenas imagens PNG, JPG, WebP e GIF são suportadas',
++  'image.tooMany': 'Uma mensagem pode conter até {count} imagens',
++  'image.fileTooLarge': 'Cada imagem deve ser menor que {size}',
++  'image.totalTooLarge': 'As imagens excedem {size} no total; remova algumas e tente novamente',
++  'image.tooManyPixels': 'A resolução da imagem é muito alta; compacte-a e tente novamente',
++  'image.dimensionTooLarge': 'Os lados da imagem devem ter no máximo {size}px; redimensione e tente novamente',
++  'image.modelUnsupported': 'O modelo atual não suporta imagens; mude para um modelo que suporte',
++  'image.subagentUnsupported': 'Sessões de subagente ainda não suportam imagens',
++  'image.sendFailed': 'Falha ao enviar imagens ({reason}); adicione-as novamente e tente de novo',
++  'context.aria': '{percent} do contexto usado',
++  'context.used': 'do contexto usado',
++  'context.system': 'Prompt do sistema',
++  'context.tools': 'Ferramentas',
++  'context.messages': 'Mensagens',
++  'stats.counts': '{turns} rodadas · {steps} etapas',
++  'stats.llm': 'LLM {duration}',
++  'stats.toolCall': 'Chamada de ferramenta {duration}',
++  'stats.ttftAverage': 'TTFT média {duration}',
++  'stats.tokensPerSecond': '{throughput} tok/s',
++  'stats.cacheHit': 'Cache hit {percent}%',
++  'stats.tokens': 'Entrada {input} tok · Saída {output} tok',
++  'settings.enter.title': 'Comportamento do Enter durante ocupação',
++  'settings.enter.description': 'Apenas durante ocupação; Cmd/Ctrl+Enter usa o outro comportamento',
++  'settings.enter.queue': 'Fila',
++  'settings.enter.steer': 'Interceptar',
++  'access.confirm.title': 'Ativar Acesso Total?',
++  'access.confirm.description': 'O Acesso Total reduz etapas de confirmação e permite que o agente execute mais ações diretamente, incluindo operações sensíveis, alterações de arquivos ou comandos externos. Use apenas quando confiar na tarefa atual.',
++  'access.confirm.acknowledge': 'Entendo os riscos e quero continuar',
++  'access.confirm.cancel': 'Cancelar',
++  'access.confirm.enable': 'Ativar Acesso Total',
++  'hero.headline': 'Introduzindo o Desconhecido',
++  'hero.preview': 'Pré-visualização',
++  'hero.chooseWorkspace': 'Escolher espaço de trabalho',
++  'session.hierarchy': 'Hierarquia de sessões',
++  'details.title': 'Detalhes',
++  'details.close': 'Fechar detalhes',
++  'details.empty': 'Clique em uma linha de ferramenta no fluxo de mensagens para ver seus detalhes',
++  'details.notInWindow': 'Esta chamada está fora da janela atual',
++  'details.input': 'Entrada',
++  'details.output': 'Saída',
++  'details.running': 'Executando…',
++  'todo.title': 'Tarefas',
++  'todo.progress.done': '{done} concluídas',
++  'todo.progress.active': '{active} em andamento',
++  'todo.progress.pending': '{pending} pendentes',
++  'todo.rowTitle': 'Atualizar lista de tarefas',
++  'todo.completed': '{done}/{total} concluídas',
++  'chat.loadingHistory': 'Carregando histórico…',
++  'chat.loadError': 'Falha ao carregar o histórico: {message} ({code})',
++  'chat.loadOlder': 'Carregar anteriores',
++  'chat.toBottom': 'Voltar ao final',
++  'fileOpen.title': 'Não foi possível abrir o arquivo',
++  'fileOpen.unknown': 'Não foi possível abrir este arquivo',
++  'fileOpen.folderTitle': 'Não foi possível abrir a pasta',
++  'fileOpen.folderUnknown': 'Não foi possível abrir esta pasta',
++  'message.extraBlock': 'Bloco de conteúdo extra',
++  'message.contextInjection': 'Injeção de contexto',
++  'message.contextRecall': 'Recall de sessão',
++  'message.referenceSummary': 'Sessão referenciada · {labels}',
++  'message.referenceSeparator': '、',
++  'message.context.instructions.loaded': 'carregado',
++  'message.context.instructions.added': 'adicionado',
++  'message.context.instructions.updated': 'atualizado',
++  'message.context.instructions.removed': 'removido',
++  'message.context.catalog.replaced': 'Catálogo substituto',
++  'message.context.catalog.more': '…mais {count}',
++  'message.context.snapshot.supersedes': 'Substitui snapshots anteriores',
++  'message.context.relay.from': 'Da sessão {session}',
++  'message.context.recall.counts': '{retained} mantidos · {omitted} omitidos',
++  'message.context.recall.truncated': 'truncado',
++  'message.compaction': 'Contexto compactado',
++  'message.compaction.running': 'Compactando contexto…',
++  'message.compaction.completed': 'Compactados {items} itens de histórico (~{tokens} tokens)',
++  'message.compaction.expand': 'Ver resumo da compactação',
++  'message.compaction.unavailable': 'Resumo da compactação indisponível',
++  'message.unknownSurface': 'Evento de surface desconhecido: {type}',
++  'message.unknownBlock': 'Bloco de conteúdo desconhecido',
++  'message.stopped': 'Parado',
++  'message.branch': 'Ramificar em uma nova conversa',
++  'message.branchUnavailable': 'Disponível apenas na última mensagem de uma rodada concluída',
++  'message.retry.active': 'Tentando novamente a solicitação do modelo',
++  'message.retry.cancelled': 'Retentativa da solicitação do modelo cancelada',
++  'message.retry.started': 'Solicitação do modelo retentada',
++  'message.retry.scheduled': 'Aguardando retentar a solicitação do modelo',
++  'message.retry.status': '{label} ({retry}/{maximum}) · {seconds}s',
++  'message.retry.delay': 'Atraso da retentativa: ',
++  'message.retry.failure': 'Motivo da falha: ',
++  'message.turnError': 'Esta rodada falhou',
++  'message.maxTokens': 'Limite de tokens de saída atingido',
++  'message.maxTokens.hint': 'A resposta foi cortada; a saída anterior é preservada na conversa. Envie "continuar" para o modelo retomar.',
++  'message.ranFor': 'Executou por {duration}',
++  'message.ttft': 'TTFT {seconds}s',
++  'message.tokensPerSecond': '{tps} tok/s',
++  'duration.seconds': '{seconds}s',
++  'duration.minutes': '{minutes}m {seconds}s',
++  'command.running': 'Executando…',
++  'command.failed': 'Comando falhou',
++  'command.done': 'Concluído',
++  'command.title': 'Comando',
++  'command.imagesUnsupported': '/{command} não aceita anexos de imagem; remova-os primeiro',
++  'approval.waiting': 'Aguardando aprovação',
++  'approval.detail.aria': 'Detalhes da aprovação',
++  'approval.escalation': 'Ferramenta {toolName} solicita execução privilegiada',
++  'approval.reject': 'Rejeitar',
++  'approval.allowOnce': 'Permitir uma vez',
++  'ask.rowTitle': 'Fazer pergunta',
++  'ask.waiting': 'aguardando',
++  'ask.cancelled': 'cancelado',
++  'ask.interrupted': 'interrompido',
++  'ask.answered': '{answered}/{total} respondidas',
++  'bash.running': 'Executando',
++  'bash.failed': 'Falhou',
++  'bash.stopped': 'Parado',
++  'row.running': 'Executando',
++  'row.failed': 'Falhou',
++  'row.stopped': 'Parado',
++  'queue.count': '{n} mensagens em fila',
++  'queue.edit': 'Editar mensagem em fila',
++  'queue.edit.unsupported': 'Contém conteúdo não textual; edição não é suportada ainda',
++  'queue.save': 'Salvar mensagem em fila',
++  'queue.cancelEdit': 'Cancelar edição',
++  'queue.remove': 'Remover mensagem emfila',
++  'queue.steer': 'Interceptar mensagem em fila',
++  'queue.steer.unavailable': 'Intercepção disponível apenas enquanto o agente estiver em execução',
++  'queue.editFailed': 'Edição falhou: esta mensagem pode ter começado a ser enviada.',
++  'queue.removeFailed': 'Remoção falhou: esta mensagem pode ter começado a ser enviada.',
++  'queue.steerFailed': 'Intercepção falhou. Tente novamente.',
++  'terminal.signal': 'sinal {signal}',
++  'terminal.exitCode': 'código de saída {code}',
++  'terminal.running': 'Executando',
++  'terminal.failed': 'Falhou',
++  'terminal.done': 'Concluído',
++  'terminal.noOutput': 'Sem saída',
++  'terminal.collapseAria': 'Recolher saída',
++  'terminal.expandAria': 'Expandir as {n} linhas de saída restantes',
++  'terminal.expandRest': '…{n} linhas restantes',
++  'json.truncated': '…truncado, {total} caracteres no total',
++  'clock.md': '{m}/{d}',
++  'clock.ymd': '{y}-{m}-{d}',
++} satisfies Record<ConversationKey, string>
+diff --git a/packages/client/ui-deliverables/src/client/index.ts b/packages/client/ui-deliverables/src/client/index.ts
+index 38b7f3fb89..35dad45096 100644
+--- a/packages/client/ui-deliverables/src/client/index.ts
++++ b/packages/client/ui-deliverables/src/client/index.ts
+@@ -12,7 +12,7 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+ import type { ChatFileMentions } from '@deepseek-ai/dsh-client-ui-conversation/client'
+ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ import { ProducedFiles } from './ProducedFiles.tsx'
+-import { en, NS, zh, type DeliverablesKey } from './locales.ts'
++import { en, NS, pt, zh, type DeliverablesKey } from './locales.ts'
+ import {
+   deliverablesDefinition, producedFileMentions, selectProducedFiles,
+ } from './turn-deliverables.ts'
+@@ -37,7 +37,7 @@ export const inject = ['slots', 'locale', 'conversationEvents', 'connection']
+ export function apply(ctx: ClientContext): void {
+   const connection = ctx.get('connection') as ConnectionHandle
+   ctx.conversationEvents.register(deliverablesDefinition)
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-deliverables: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-deliverables: dictionaries')
+   ctx.slots.inject(
+     'conversation.chat.turnTail',
+     () => ctx.slots.register({
+diff --git a/packages/client/ui-deliverables/src/client/locales.ts b/packages/client/ui-deliverables/src/client/locales.ts
+index ec8b587b28..6675ff95f7 100644
+--- a/packages/client/ui-deliverables/src/client/locales.ts
++++ b/packages/client/ui-deliverables/src/client/locales.ts
+@@ -21,5 +21,14 @@ export const en: Record<DeliverablesKey, string> = {
+   'produced.showInFolder': 'Show in folder',
+ }
+ 
++/** Brazilian Portuguese dictionary (same key set). */
++export const pt: Record<DeliverablesKey, string> = {
++  'produced.label': 'Gerados',
++  'produced.moreOne': '+ 1 arquivo',
++  'produced.more': '+ {count} arquivos',
++  'produced.open': 'Abrir {name}',
++  'produced.showInFolder': 'Mostrar na pasta',
++}
++
+ /** Union of this namespace's dictionary keys. */
+ export type DeliverablesKey = keyof typeof zh
+diff --git a/packages/client/ui-directory-picker-browse/src/client/index.ts b/packages/client/ui-directory-picker-browse/src/client/index.ts
+index 48f9c14309..04005bef2d 100644
+--- a/packages/client/ui-directory-picker-browse/src/client/index.ts
++++ b/packages/client/ui-directory-picker-browse/src/client/index.ts
+@@ -62,6 +62,21 @@ export function apply(ctx: ClientContext): void {
+         'browser.truncated': 'Too many folders to list; only the beginning is shown.',
+         'browser.showHidden': 'Show hidden files',
+       }],
++      ['pt', {
++        'browser.title': 'Selecionar Diretório do Espaço de Trabalho',
++        'browser.home': 'Home',
++        'browser.newFolder': 'Nova pasta',
++        'browser.folderName': 'Nome da pasta',
++        'browser.createIn': 'Nova pasta em "{name}"',
++        'browser.untitledFolder': 'Pasta sem título',
++        'browser.create': 'Criar',
++        'browser.cancel': 'Cancelar',
++        'browser.open': 'Abrir',
++        'browser.editPath': 'Editar caminho',
++        'browser.loading': 'Carregando…',
++        'browser.truncated': 'Muitas pastas para listar; apenas o início é mostrado.',
++        'browser.showHidden': 'Mostrar arquivos ocultos',
++      }],
+     ]
+     try {
+       for (const [locale, dict] of dictionaries) disposers.push(ctx.locale.register(LOCALE_NS, locale, dict))
+diff --git a/packages/client/ui-goal/src/client/index.ts b/packages/client/ui-goal/src/client/index.ts
+index bfa1a283b5..7709c967cb 100644
+--- a/packages/client/ui-goal/src/client/index.ts
++++ b/packages/client/ui-goal/src/client/index.ts
+@@ -21,7 +21,7 @@ import type { GoalActionResult, GoalBarActions } from './slots.ts'
+ import { GoalDock } from './GoalBar.tsx'
+ import { GoalCommandInputView } from './GoalCommandInputView.tsx'
+ import { goalCommandInputDefinition } from './goal-command-input.ts'
+-import { en, zh, type GoalKey } from './locales.ts'
++import { en, pt, zh, type GoalKey } from './locales.ts'
+ 
+ export { GoalBar, GoalDock } from './GoalBar.tsx'
+ export type { GoalActionResult, GoalBarActions } from './slots.ts'
+@@ -46,7 +46,7 @@ export const inject = ['slots', 'sessions', 'remote', 'remote.goals', 'locale',
+  */
+ export function apply(ctx: ClientContext): void {
+   ctx.conversationEvents.register(goalCommandInputDefinition)
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-goal: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-goal: dictionaries')
+ 
+   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
+     name: 'conversation.chat.node',
+diff --git a/packages/client/ui-goal/src/client/locales.ts b/packages/client/ui-goal/src/client/locales.ts
+index 5fd6411573..95566755a4 100644
+--- a/packages/client/ui-goal/src/client/locales.ts
++++ b/packages/client/ui-goal/src/client/locales.ts
+@@ -32,3 +32,18 @@ export const en = {
+   'action.edit': 'Edit goal',
+   'action.clear': 'Clear goal',
+ } satisfies Record<GoalKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'phase.active': 'Objetivo em andamento',
++  'phase.paused': 'Objetivo pausado',
++  'phase.blocked': 'Objetivo bloqueado',
++  'objective.aria': 'Objetivo',
++  'commandInput.aria': 'Entrada de comando',
++  'action.save': 'Salvar objetivo',
++  'action.cancel': 'Cancelar edição',
++  'action.pause': 'Pausar objetivo',
++  'action.resume': 'Retomar objetivo',
++  'action.edit': 'Editar objetivo',
++  'action.clear': 'Limpar objetivo',
++} satisfies Record<GoalKey, string>
+diff --git a/packages/client/ui-input-trigger/src/client/index.ts b/packages/client/ui-input-trigger/src/client/index.ts
+index 0e7f1af099..ab491494eb 100644
+--- a/packages/client/ui-input-trigger/src/client/index.ts
++++ b/packages/client/ui-input-trigger/src/client/index.ts
+@@ -10,7 +10,7 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+ import { InputTriggerService } from './service.ts'
+ import type { MenuViewInjected } from './slots.ts'
+ import { MenuView } from './MenuView.tsx'
+-import { en, zh, type MenuKey } from './locales.ts'
++import { en, pt, zh, type MenuKey } from './locales.ts'
+ 
+ export { InputTriggerService } from './service.ts'
+ export { InputTriggerController } from './controller.ts'
+@@ -54,7 +54,7 @@ export const inject = ['sessions', 'locale']
+  */
+ export function apply(ctx: ClientContext): void {
+   ctx.plugin(InputTriggerService)
+-  ctx.effect(() => ctx.locale.register(MENU_NS, { zh, en }), 'ui-input-trigger: menu dictionaries')
++  ctx.effect(() => ctx.locale.register(MENU_NS, { zh, en, pt }), 'ui-input-trigger: menu dictionaries')
+   ctx.inject(['slots', 'inputTriggers', 'sessions'], (scope: ClientContext) => {
+     const inputTriggers = scope.inputTriggers
+     const sessions = scope.sessions
+diff --git a/packages/client/ui-input-trigger/src/client/locales.ts b/packages/client/ui-input-trigger/src/client/locales.ts
+index 1d4784bfbe..c8e2c99ab5 100644
+--- a/packages/client/ui-input-trigger/src/client/locales.ts
++++ b/packages/client/ui-input-trigger/src/client/locales.ts
+@@ -24,3 +24,12 @@ export const en = {
+   'loading': 'Loading…',
+   'suggestions.aria': 'Trigger suggestions',
+ } satisfies Record<MenuKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'command': 'Comandos',
++  'skill': 'Skills',
++  'subagent': 'Subagentes',
++  'loading': 'Carregando…',
++  'suggestions.aria': 'Sugestões de gatilho',
++} satisfies Record<MenuKey, string>
+diff --git a/packages/client/ui-jobs/src/client/index.ts b/packages/client/ui-jobs/src/client/index.ts
+index 658f080702..1329d64c6d 100644
+--- a/packages/client/ui-jobs/src/client/index.ts
++++ b/packages/client/ui-jobs/src/client/index.ts
+@@ -7,7 +7,7 @@
+ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+ import { JobListAction } from './JobListAction.tsx'
+ import type {} from '@deepseek-ai/dsh-client-locale/client'
+-import { en, NS, zh, type JobKey } from './locales.ts'
++import { en, NS, pt, zh, type JobKey } from './locales.ts'
+ 
+ declare module '@deepseek-ai/dsh-client-ui-slots' {
+   interface LocaleNamespaceMap {
+@@ -26,7 +26,7 @@ export const inject = ['sessions', 'slots', 'locale']
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-job: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-job: dictionaries')
+   ctx.slots.inject(
+     'conversation.session.header.actions',
+     () => ctx.slots.register({
+diff --git a/packages/client/ui-jobs/src/client/locales.ts b/packages/client/ui-jobs/src/client/locales.ts
+index 70bb2e9e0f..c4032e6c88 100644
+--- a/packages/client/ui-jobs/src/client/locales.ts
++++ b/packages/client/ui-jobs/src/client/locales.ts
+@@ -41,5 +41,24 @@ export const en: Record<JobKey, string> = {
+   'duration.title.done': 'Took {duration}',
+ }
+ 
++/** Brazilian Portuguese dictionary, key-identical to the Chinese source of truth. */
++export const pt: Record<JobKey, string> = {
++  'count.live.one': '{count} tarefa de fundo em execução',
++  'count.live.other': '{count} tarefas de fundo em execução',
++  'count.idle.one': '{count} tarefa de fundo',
++  'count.idle.other': '{count} tarefas de fundo',
++  'list.aria': 'Tarefas de fundo',
++  'status.running': 'em execução',
++  'status.stopping': 'parando',
++  'status.completed': 'concluída',
++  'status.killed': 'cancelada',
++  'status.failed': 'falhou',
++  'duration.seconds': '{seconds}s',
++  'duration.minutes': '{minutes}m {seconds}s',
++  'duration.hours': '{hours}h {minutes}m',
++  'duration.title.live': 'Em execução por {duration}',
++  'duration.title.done': 'Demorou {duration}',
++}
++
+ /** Key domain of the `job` namespace (zh is the source of truth). */
+ export type JobKey = keyof typeof zh
+diff --git a/packages/client/ui-message-feedback/src/client/index.ts b/packages/client/ui-message-feedback/src/client/index.ts
+index d602ac2bb0..343e71f8ca 100644
+--- a/packages/client/ui-message-feedback/src/client/index.ts
++++ b/packages/client/ui-message-feedback/src/client/index.ts
+@@ -17,7 +17,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ import { MessageFeedbackController } from './controller.ts'
+ import { MessageFeedbackActions } from './MessageFeedbackActions.tsx'
+ import type { MessageFeedbackInjected } from './slots.ts'
+-import { en, zh } from './locales.ts'
++import { en, pt, zh } from './locales.ts'
+ 
+ export type {
+   MessageFeedbackActionResult, MessageFeedbackStatus, MessageFeedbackView, MessageFeedbackRemote,
+@@ -37,7 +37,7 @@ export const inject = ['slots', 'remote', 'remote.messageFeedback', 'locale']
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-message-feedback: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-message-feedback: dictionaries')
+ 
+   const controllers = new Map<SessionId, MessageFeedbackController>()
+   const controllerFor = (sessionId: SessionId): MessageFeedbackController => {
+diff --git a/packages/client/ui-message-feedback/src/client/locales.ts b/packages/client/ui-message-feedback/src/client/locales.ts
+index f4e1a72d7f..b6adcdf67a 100644
+--- a/packages/client/ui-message-feedback/src/client/locales.ts
++++ b/packages/client/ui-message-feedback/src/client/locales.ts
+@@ -43,3 +43,20 @@ export const en = {
+   'error.load': 'Could not load feedback',
+   'error.generic': 'Could not save feedback',
+ } satisfies Record<MessageFeedbackKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'action.like': 'Boa resposta',
++  'action.likeActive': 'Remover avaliação',
++  'action.dislike': 'Resposta ruim',
++  'action.dislikeActive': 'Remover avaliação',
++  'note.open': 'Adicionar uma nota',
++  'note.dialog': 'Avaliação',
++  'note.placeholder': 'O que foi bom, ou o que deu errado? (opcional)',
++  'note.save': 'Salvar',
++  'note.cancel': 'Cancelar',
++  'note.aria': 'Nota de avaliação',
++  'error.conflict': 'Esta avaliação foi alterada em outro lugar; o estado mais recente é mostrado',
++  'error.load': 'Não foi possível carregar a avaliação',
++  'error.generic': 'Não foi possível salvar a avaliação',
++} satisfies Record<MessageFeedbackKey, string>
+diff --git a/packages/client/ui-model-selection/src/client/index.ts b/packages/client/ui-model-selection/src/client/index.ts
+index fac380ef8e..a59b94efda 100644
+--- a/packages/client/ui-model-selection/src/client/index.ts
++++ b/packages/client/ui-model-selection/src/client/index.ts
+@@ -24,7 +24,7 @@ import type { ModelDirectoryState } from './directory.ts'
+ import { ModelDirectoryResolver } from './service.ts'
+ import type { ModelSelectInjected } from './slots.ts'
+ import { ModelSelect } from './ModelSelect.tsx'
+-import { en, zh, type ModelKey } from './locales.ts'
++import { en, pt, zh, type ModelKey } from './locales.ts'
+ 
+ export { ModelDirectory } from './directory.ts'
+ export type { ModelDirectoryState } from './directory.ts'
+@@ -106,7 +106,7 @@ export const inject = ['commandUi', 'connection', 'locale', 'sessions', 'slots',
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-model-selection: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-model-selection: dictionaries')
+ 
+   // Non-slot faces (the command description, the popup option builder) read
+   // through the bound translate; the seat component reads the standard seat.
+diff --git a/packages/client/ui-model-selection/src/client/locales.ts b/packages/client/ui-model-selection/src/client/locales.ts
+index 2200eee56b..d94977d793 100644
+--- a/packages/client/ui-model-selection/src/client/locales.ts
++++ b/packages/client/ui-model-selection/src/client/locales.ts
+@@ -52,3 +52,24 @@ export const en = {
+   'blocked.composer': 'This model is unavailable — select one to continue',
+   'empty.efforts': 'This model provides no reasoning effort levels.',
+ } satisfies Record<ModelKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'command.description': 'Select the model for this conversation',
++  'option.loadError': 'Falha ao carregar catálogo: {message}',
++  'trigger.fallback': 'Selecionar modelo',
++  'trigger.selectAria': 'Selecionar modelo',
++  'trigger.aria': 'Selecionar modelo, atual {model}',
++  'trigger.ariaEffort': 'Selecionar modelo, atual {model}, esforço de raciocínio {effort}',
++  'menu.aria': 'Modelo e esforço de raciocínio',
++  'menu.model': 'Modelo',
++  'menu.effort': 'Esforço',
++  'effort.providerDefault': 'Padrão',
++  'status.loading': 'Atualizando lista de modelos…',
++  'error.action': 'Operação do modelo falhou: {message}',
++  'action.reload': 'Recarregar',
++  'warning.groupLoad': '{name} falhou ao carregar: {message}',
++  'empty.models': 'Nenhum modelo disponível.',
++  'blocked.composer': 'Este modelo está indisponível — selecione um para continuar',
++  'empty.efforts': 'Este modelo não oferece níveis de esforço de raciocínio.',
++} satisfies Record<ModelKey, string>
+diff --git a/packages/client/ui-permission-presets/src/client/index.ts b/packages/client/ui-permission-presets/src/client/index.ts
+index 8df17b5b32..0d24aa663b 100644
+--- a/packages/client/ui-permission-presets/src/client/index.ts
++++ b/packages/client/ui-permission-presets/src/client/index.ts
+@@ -28,7 +28,7 @@ import type { PermissionSelect } from '@deepseek-ai/dsh-permission-presets/clien
+ import { PermissionRow } from './PermissionRow.tsx'
+ import type { PermissionRowInjected } from './PermissionRow.tsx'
+ import {
+-  accessEn, accessZh, en, zh,
++  accessEn, accessPt, accessZh, en, pt, zh,
+ } from './locales.ts'
+ import {
+   displayPermissionPreset, FULL_ACCESS_PRESET,
+@@ -100,6 +100,13 @@ export function apply(ctx: ClientContext): void {
+         'confirm.cancel': accessEn['confirm.cancel'],
+         'confirm.enable': accessEn['confirm.enable'],
+       }),
++      ctx.locale.register(ACCESS_NS, 'pt', {
++        'confirm.title': accessPt['confirm.title'],
++        'confirm.description': accessPt['confirm.description'],
++        'confirm.acknowledge': accessPt['confirm.acknowledge'],
++        'confirm.cancel': accessPt['confirm.cancel'],
++        'confirm.enable': accessPt['confirm.enable'],
++      }),
+     ]
+     return () => { for (const dispose of disposers) dispose() }
+   }, 'ui-permission: Full access confirmation dictionaries')
+@@ -108,7 +115,7 @@ export function apply(ctx: ClientContext): void {
+   const sessionFor = (session: ClientSessionContext): SessionFace | undefined =>
+     sessions.binding(session.sessionId)?.session
+ 
+-  ctx.effect(() => ctx.locale.register('settings.permission', { zh, en }), 'ui-permission: settings row dictionaries')
++  ctx.effect(() => ctx.locale.register('settings.permission', { zh, en, pt }), 'ui-permission: settings row dictionaries')
+ 
+   const connection = ctx.get('connection') as ConnectionHandle
+   // The row follows the shared describe mirror, whose owning plugin already
+diff --git a/packages/client/ui-permission-presets/src/client/locales.ts b/packages/client/ui-permission-presets/src/client/locales.ts
+index 3920a7a1ff..2c0f8cb956 100644
+--- a/packages/client/ui-permission-presets/src/client/locales.ts
++++ b/packages/client/ui-permission-presets/src/client/locales.ts
+@@ -29,6 +29,19 @@ export const en = {
+   'confirm.enable': 'Enable Full access',
+ } satisfies Record<PermissionSettingsKey, string>
+ 
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'title': 'Permissão',
++  'description': 'Escolha o modo de permissão padrão para novas sessões',
++  'loading': 'Carregando',
++  'unavailable': 'Indisponível',
++  'confirm.title': 'Ativar Acesso Total?',
++  'confirm.description': 'O Acesso Total permite que novas sessões reduzam etapas de confirmação e executem mais ações diretamente, incluindo operações sensíveis, alterações de arquivos ou comandos externos. Use apenas quando confiar nas tarefas subsequentes.',
++  'confirm.acknowledge': 'Entendo os riscos e quero continuar',
++  'confirm.cancel': 'Cancelar',
++  'confirm.enable': 'Ativar Acesso Total',
++} satisfies Record<PermissionSettingsKey, string>
++
+ /** Simplified Chinese dictionary for the current-session popup gate. */
+ export const accessZh = {
+   'confirm.title': '确认启用 Full access？',
+@@ -49,3 +62,12 @@ export const accessEn = {
+   'confirm.cancel': 'Cancel',
+   'confirm.enable': 'Enable Full access',
+ } satisfies Record<PermissionAccessKey, string>
++
++/** Brazilian Portuguese dictionary for the current-session popup gate. */
++export const accessPt = {
++  'confirm.title': 'Ativar Acesso Total?',
++  'confirm.description': 'O Acesso Total reduz etapas de confirmação e permite que o agente execute mais ações diretamente, incluindo operações sensíveis, alterações de arquivos ou comandos externos. Use apenas quando confiar na tarefa atual.',
++  'confirm.acknowledge': 'Entendo os riscos e quero continuar',
++  'confirm.cancel': 'Cancelar',
++  'confirm.enable': 'Ativar Acesso Total',
++} satisfies Record<PermissionAccessKey, string>
+diff --git a/packages/client/ui-plan/src/client/index.ts b/packages/client/ui-plan/src/client/index.ts
+index a19a028bb6..23aa1bbc00 100644
+--- a/packages/client/ui-plan/src/client/index.ts
++++ b/packages/client/ui-plan/src/client/index.ts
+@@ -16,7 +16,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ // Type-only: pulls the `plan` SessionProjectionMap merge for useProjection.
+ import type {} from '@deepseek-ai/dsh-plan-mode/client'
+ import { PlanChip } from './PlanModeControl.tsx'
+-import { en, zh, type PlanKey } from './locales.ts'
++import { en, pt, zh, type PlanKey } from './locales.ts'
+ 
+ export type { PlanKey } from './locales.ts'
+ 
+@@ -47,7 +47,7 @@ export const inject = ['slots', 'remote', 'remote.commands', 'locale']
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-plan: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-plan: dictionaries')
+ 
+   ctx.slots.inject('conversation.input.plan', () => ctx.slots.register({
+     name: 'conversation.input.plan',
+diff --git a/packages/client/ui-plan/src/client/locales.ts b/packages/client/ui-plan/src/client/locales.ts
+index 6410e6489b..c624d33f3d 100644
+--- a/packages/client/ui-plan/src/client/locales.ts
++++ b/packages/client/ui-plan/src/client/locales.ts
+@@ -18,3 +18,11 @@ export const en = {
+   'chip.off.aria': 'Plan mode off, press to turn on',
+   'chip.off.title': 'Plan mode off — click to turn on (/plan)',
+ } satisfies Record<PlanKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'chip.on.aria': 'Modo plano ligado, pressione para desligar',
++  'chip.on.title': 'Modo plano ligado — clique para desligar (/plan off)',
++  'chip.off.aria': 'Modo plano desligado, pressione para ligar',
++  'chip.off.title': 'Modo plano desligado — clique para ligar (/plan)',
++} satisfies Record<PlanKey, string>
+diff --git a/packages/client/ui-reference/src/client/index.ts b/packages/client/ui-reference/src/client/index.ts
+index 312db17222..9357ec1f98 100644
+--- a/packages/client/ui-reference/src/client/index.ts
++++ b/packages/client/ui-reference/src/client/index.ts
+@@ -16,7 +16,7 @@ import type {
+ import { formatFileMention } from '@deepseek-ai/dsh-file-reference/grammar'
+ import type { FileReferenceCandidate } from '@deepseek-ai/dsh-file-reference/types'
+ import type { SessionReferenceMentionCandidate } from '@deepseek-ai/dsh-session-reference/types'
+-import { en, NS, zh, type ReferenceKey } from './locales.ts'
++import { en, NS, pt, zh, type ReferenceKey } from './locales.ts'
+ 
+ /** Required services: the trigger registry, the Remote namespaces, and the copy. */
+ export const inject = [
+@@ -28,7 +28,7 @@ export const inject = [
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-reference: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-reference: dictionaries')
+   const t = ctx.locale.bind(NS)
+   const source: InputTriggerSource = {
+     trigger: '@',
+diff --git a/packages/client/ui-reference/src/client/locales.ts b/packages/client/ui-reference/src/client/locales.ts
+index 41ec525e75..cd5791ba2e 100644
+--- a/packages/client/ui-reference/src/client/locales.ts
++++ b/packages/client/ui-reference/src/client/locales.ts
+@@ -34,3 +34,13 @@ export const en = {
+   'candidate.session': 'Session',
+   'candidate.noCwd': '(no cwd)',
+ } satisfies Record<ReferenceKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'section.files': 'Arquivos e pastas',
++  'section.sessions': 'Conversas de sessão',
++  'candidate.file': 'Arquivo',
++  'candidate.folder': 'Pasta',
++  'candidate.session': 'Sessão',
++  'candidate.noCwd': '(sem pasta de trabalho)',
++} satisfies Record<ReferenceKey, string>
+diff --git a/packages/client/ui-settings-general/src/client/index.ts b/packages/client/ui-settings-general/src/client/index.ts
+index dd62e8a138..383c25fbd8 100644
+--- a/packages/client/ui-settings-general/src/client/index.ts
++++ b/packages/client/ui-settings-general/src/client/index.ts
+@@ -25,7 +25,7 @@ import { GeneralSection } from './GeneralSection.tsx'
+ import { SettingsDocumentAction } from './SettingsDocumentAction.tsx'
+ import type { SettingsDocumentActionInjected } from './SettingsDocumentAction.tsx'
+ import { SettingsDocumentStore } from './settings-document-store.ts'
+-import { en, zh, type SettingsKey } from './locales.ts'
++import { en, pt, zh, type SettingsKey } from './locales.ts'
+ 
+ export type {
+   CloseLabelProps, HeaderContentProps, TriggerContentProps,
+@@ -61,7 +61,7 @@ export const inject = ['slots', 'locale', 'connection', 'settingsScope']
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-general: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-settings-general: dictionaries')
+ 
+   // Copy freshness is framework-owned: components read the standard `t`
+   // seat, and the nav label is a thunk the owner resolves per render — no
+diff --git a/packages/client/ui-settings-general/src/client/locales.ts b/packages/client/ui-settings-general/src/client/locales.ts
+index a557855323..5a98baf5bd 100644
+--- a/packages/client/ui-settings-general/src/client/locales.ts
++++ b/packages/client/ui-settings-general/src/client/locales.ts
+@@ -22,3 +22,13 @@ export const en = {
+   'openDocument.error': 'Could not open configuration file',
+   'general.nav': 'General',
+ } satisfies Record<SettingsKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'trigger': 'Configurações',
++  'title': 'Configurações',
++  'close': 'Fechar',
++  'openDocument': 'Abrir arquivo de configuração',
++  'openDocument.error': 'Não foi possível abrir o arquivo de configuração',
++  'general.nav': 'Geral',
++} satisfies Record<SettingsKey, string>
+diff --git a/packages/client/ui-settings-models/src/client/index.ts b/packages/client/ui-settings-models/src/client/index.ts
+index 90a2aed75a..df2949c643 100644
+--- a/packages/client/ui-settings-models/src/client/index.ts
++++ b/packages/client/ui-settings-models/src/client/index.ts
+@@ -24,7 +24,7 @@ import type { WelcomeNoticeInjected } from './WelcomeNotice.tsx'
+ import { decodeWelcomeSection, WelcomeNoticeStore } from './welcome-store.ts'
+ import { ModelsSettingsStore } from './store.ts'
+ import { createSettingsSchemaOperations } from './schema-operations.ts'
+-import { en, zh, type ModelsKey } from './locales.ts'
++import { en, pt, zh, type ModelsKey } from './locales.ts'
+ import { WELCOME_NOTICE_SETTINGS_NAMESPACE } from '../onboarding-copy.ts'
+ 
+ export type { ModelsSectionInjected, ModelsSectionProps } from './ModelsSection.tsx'
+@@ -65,7 +65,7 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-models: copy dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-settings-models: copy dictionaries')
+ 
+   const connection = ctx.get('connection') as ConnectionHandle
+   const schema = createSettingsSchemaOperations(ctx.settingsSchema)
+diff --git a/packages/client/ui-settings-models/src/client/locales.ts b/packages/client/ui-settings-models/src/client/locales.ts
+index 856ef64c7b..24ee491ea6 100644
+--- a/packages/client/ui-settings-models/src/client/locales.ts
++++ b/packages/client/ui-settings-models/src/client/locales.ts
+@@ -101,6 +101,105 @@ export const en = {
+   keyRequired: 'Enter an API key to continue.',
+ }
+ 
++/** Brazilian Portuguese strings (same keys as {@link en}). */
++export const pt: { [Key in keyof typeof en]: string } = {
++  nav: 'Modelos',
++  title: 'Modelos',
++  intro: 'Insira suas chaves de API para usar modelos dos seguintes provedores.',
++  edit: 'Editar',
++  editProvider: 'Editar {provider}',
++  remove: 'Excluir',
++  removeProvider: 'Excluir {provider}',
++  deleteTitle: 'Excluir {provider}?',
++  deleteDescription: 'Excluir {provider} remove sua configuração. Qualquer credencial que ela usa é gerenciada em outro lugar e será mantida.',
++  deleteDescriptionWithCredential: 'Excluir {provider} remove sua configuração e a chave de API armazenada.',
++  deleteConfirm: 'Excluir {provider}',
++  deleting: 'Excluindo {provider}…',
++  add: 'Adicionar provedor',
++  provider: 'Provedor',
++  close: 'Fechar',
++  cancel: 'Cancelar',
++  apply: 'Aplicar',
++  applying: 'Aplicando…',
++  savedProvider: '{provider} salvo.',
++  credentialConfigured: 'Chave de API configurada',
++  credentialMissing: 'Chave de API ausente',
++  readOnly: 'O documento de configurações é apenas para leitura nesta implantação.',
++  loadFailed: 'Falha ao carregar o diretório de provedores',
++  conflict: 'Alguém mais alterou essas configurações enquanto este cartão estava aberto. Feche-o e reabra para editar os valores atuais.',
++  retry: 'Tentar novamente',
++  keyInput: 'Chave de API',
++  keyPlaceholder: 'Insira sua chave de API',
++  keyPlaceholderNative: 'Insira uma chave de API, ou deixe em branco para usar a autenticação do ambiente',
++  keyStored: 'Configurado — insira um novo valor para substituir',
++  keyEnvLocked: 'Fornecido pelo ambiente de inicialização (apenas leitura)',
++  customized: 'Configurações personalizadas',
++  baseUrl: 'URL base',
++  baseUrlDefault: 'Padrão do provedor',
++  models: 'Modelos',
++  modelsInherited: 'Usando os padrões do adaptador',
++  modelsCustomized: 'Catálogo de modelos personalizado',
++  resetModels: 'Restaurar padrões',
++  model: 'Modelo',
++  modelId: 'ID do modelo',
++  modelName: 'Nome de exibição',
++  modelNamePlaceholder: 'Usa o ID do modelo quando vazio',
++  contextWindow: 'Janela de contexto',
++  contextWindowPlaceholder: 'Usa o padrão do provedor',
++  maxTokens: 'Máximo de tokens de saída',
++  maxTokensPlaceholder: 'Usa o padrão do provedor',
++  modelAdvanced: 'Capacidades',
++  addModel: 'Adicionar modelo',
++  removeModel: 'Excluir modelo',
++  modelsEmpty: 'Nenhum modelo será mostrado no seletor. IDs não listados ainda podem ser enviados diretamente.',
++  keyBlank: 'Insira a chave de API, ou deixe o campo vazio para manter a armazenada.',
++  keyBlankNew: 'Insira a chave de API, ou deixe o campo vazio se este provedor autenticar de outra forma.',
++  keyIllegalCharacters: 'Esta chave de API não está em um formato válido. Verifique-a.',
++  modelIdRequired: 'ID do modelo é obrigatório.',
++  modelIdDuplicate: 'ID do modelo deve ser único.',
++  modelNameInvalid: 'O nome de exibição não pode estar vazio.',
++  modelContextInvalid: 'A janela de contexto deve ser um valor positivo, como 131072, 256K ou 1M.',
++  modelMaxTokensInvalid: 'Máximo de tokens de saída deve ser um valor positivo, como 8192, 64K ou 1M.',
++  advancedHint: 'Outros campos estão no settings.yaml; edite essa seção diretamente.',
++  modelCapacityInvalid: 'Uma capacidade deve ser um número, opcionalmente seguido por K or M.',
++  modelDuplicate: 'Cada ID de modelo pode aparecer uma vez.',
++  modelContextWindow: 'Janela de contexto',
++  modelMaxTokens: 'Máximo de tokens de saída',
++  fetchModels: 'Buscar modelos disponíveis',
++  fetching: 'Perguntando ao provedor…',
++  fetchNeedsBaseUrl: 'Insira a URL base primeiro, depois busque.',
++  fetchEmpty: 'O provedor não listou nenhum modelo. Adicione-os manualmente.',
++  fetchTitle: 'Escolha os modelos para adicionar',
++  fetchDescription: 'Estes são os modelos que este provedor tem disponíveis. Escolha os que deseja adicionar.',
++  fetchSelectAll: 'Selecionar todos',
++  fetchDeselectAll: 'Desmarcar todos',
++  fetchAdopt: 'Adicionar selecionados',
++  customAdd: 'Adicionar um provedor personalizado',
++  customTitle: 'Provedor personalizado',
++  customTag: 'Personalizado',
++  customRoute: 'ID do provedor',
++  customRouteHint: 'Identificador em letras minúsculas, começando com uma letra, que nomeia unicamente este provedor nas requisições e como nome de credencial.',
++  customRouteInvalid: 'Comece com uma letra minúscula; depois letras minúsculas, dígitos e hífens.',
++  customRouteTaken: 'Um provedor já usa este ID.',
++  customDisplayName: 'Nome de exibição',
++  customApi: 'Protocolo de API',
++  customApiUnset: 'Não selecionado',
++  customNeedsBaseUrl: 'Um provedor personalizado precisa de uma URL base.',
++  customNeedsModels: 'Um provedor personalizado precisa de pelo menos um modelo.',
++  create: 'Criar provedor',
++  creating: 'Criando…',
++  welcomeTitle: WELCOME_NOTICE_COPY.en.title,
++  welcomeBody: WELCOME_NOTICE_COPY.en.body,
++  welcomeContinue: WELCOME_NOTICE_COPY.en.continueLabel,
++  welcomeError: 'O reconhecimento não pôde ser salvo. Tente novamente.',
++  onboardingTitle: 'Adicione uma chave de API para começar',
++  onboardingDescription: 'Configure o provedor oficial DeepSeek para começar a construir.',
++  onboardingLater: 'Configurar depois',
++  onboardingSave: 'Salvar e continuar',
++  onboardingSaving: 'Salvando…',
++  keyRequired: 'Insira uma chave de API para continuar.',
++}
++
+ /** The settings.models namespace key union. */
+ export type ModelsKey = keyof typeof en
+ 
+diff --git a/packages/client/ui-settings-plugin-inventory/src/client/index.ts b/packages/client/ui-settings-plugin-inventory/src/client/index.ts
+index ccfd8bda5a..25cfdc0625 100644
+--- a/packages/client/ui-settings-plugin-inventory/src/client/index.ts
++++ b/packages/client/ui-settings-plugin-inventory/src/client/index.ts
+@@ -4,7 +4,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+ import { PluginInventorySettingsTab, type PluginInventorySettingsTabInjected } from './PluginInventorySettingsTab.tsx'
+-import { en, zh, type PluginInventoryLocaleKey } from './locales.ts'
++import { en, pt, zh, type PluginInventoryLocaleKey } from './locales.ts'
+ 
+ export type { PluginInventorySettingsTabInjected, PluginInventorySettingsTabProps } from './PluginInventorySettingsTab.tsx'
+ export type { PluginInventoryLocaleKey } from './locales.ts'
+@@ -24,7 +24,7 @@ export const inject = ['slots', 'locale', 'remote', 'remote.pluginInventory']
+ 
+ /** Contribute the lazy inventory tab to the Plugins settings section. */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-plugin-inventory: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-settings-plugin-inventory: dictionaries')
+ 
+   const t = ctx.locale.bind(NS)
+   const list: PluginInventorySettingsTabInjected['list'] = async () => {
+diff --git a/packages/client/ui-settings-plugin-inventory/src/client/locales.ts b/packages/client/ui-settings-plugin-inventory/src/client/locales.ts
+index 866937016c..ffa3094d95 100644
+--- a/packages/client/ui-settings-plugin-inventory/src/client/locales.ts
++++ b/packages/client/ui-settings-plugin-inventory/src/client/locales.ts
+@@ -46,3 +46,25 @@ export const en = {
+   failed: 'Mount failed',
+   unloading: 'Unloading',
+ } satisfies Record<PluginInventoryLocaleKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  tab: 'Lista de plugins',
++  loading: 'Lendo plugins…',
++  error: 'Plugins temporariamente indisponíveis.',
++  retry: 'Tentar novamente',
++  search: 'Pesquisar plugins',
++  catalog: 'Lista de plugins',
++  empty: 'Nenhum plugin disponível.',
++  emptySearch: 'Nenhum plugin correspondente.',
++  enabledTag: 'Habilitado',
++  disabledTag: 'Desabilitado',
++  configuration: 'Configuração',
++  cordis: 'Status Cordis',
++  unobserved: 'Não montado',
++  pending: 'Aguardando dependências',
++  loadingPhase: 'Carregando',
++  active: 'Montado',
++  failed: 'Falha ao montar',
++  unloading: 'Desmontando',
++} satisfies Record<PluginInventoryLocaleKey, string>
+diff --git a/packages/client/ui-settings-plugins/src/client/index.ts b/packages/client/ui-settings-plugins/src/client/index.ts
+index daf7a280dc..2a18986444 100644
+--- a/packages/client/ui-settings-plugins/src/client/index.ts
++++ b/packages/client/ui-settings-plugins/src/client/index.ts
+@@ -30,7 +30,7 @@ import { AGENT_LOOP_NS, AgentLoopCardController } from './agent-loop-card-contro
+ import { SHELL_NS, BashCardController } from './bash-card-controller.ts'
+ import { ConfigurablePluginsTabController } from './tab-store.ts'
+ import { WEB_SEARCH_NS, WebSearchCardController } from './web-search-card-controller.ts'
+-import { en, zh } from './locales.ts'
++import { en, pt, zh } from './locales.ts'
+ 
+ export type { PluginsSettingsSectionInjected, PluginsSettingsSectionProps } from './PluginsSettingsSection.tsx'
+ export type { ConfigurablePluginsTabProps } from './ConfigurablePluginsTab.tsx'
+@@ -58,7 +58,7 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope
+ export function apply(ctx: ClientContext): void {
+   const { api } = ctx.get('connection') as ConnectionHandle
+   const t = ctx.locale.bind(NS)
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-plugins: section dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-settings-plugins: section dictionaries')
+ 
+   const bash = new BashCardController(ctx.settingsScope.bind({ namespace: SHELL_NS }))
+   const agentLoop = new AgentLoopCardController(ctx.settingsScope.bind({ namespace: AGENT_LOOP_NS }))
+diff --git a/packages/client/ui-settings-plugins/src/client/locales.ts b/packages/client/ui-settings-plugins/src/client/locales.ts
+index 1478e39997..0fc53ebe97 100644
+--- a/packages/client/ui-settings-plugins/src/client/locales.ts
++++ b/packages/client/ui-settings-plugins/src/client/locales.ts
+@@ -53,6 +53,47 @@ export const en: Record<PluginsSettingsLocaleKey, string> = {
+   webSearchMaxUsesHint: 'How many times one request may search before it must answer.',
+ }
+ 
++/** Brazilian Portuguese copy. */
++export const pt: Record<PluginsSettingsLocaleKey, string> = {
++  nav: 'Plugins',
++  title: 'Plugins',
++  intro: 'Configure e inspecione os plugins instalados nesta implantação.',
++  tabs: 'Visões de plugins',
++  configurableTab: 'Configuração de plugin',
++  empty: 'Esta implantação não expõe configurações de plugin.',
++  overridden: 'Sobrescrito',
++  reset: 'Restaurar padrão',
++  readOnly: 'Esta implantação armazena configurações apenas para leitura.',
++  expand: 'Mostrar configurações',
++  collapse: 'Ocultar configurações',
++  save: 'Salvar',
++  saving: 'Salvando…',
++  discard: 'Descartar',
++  unsaved: 'Não salvo',
++  saveFailed: 'A implantação não aceitou esses valores; eles foram deixados para você corrigir.',
++  invalidNumber: 'Digite um número, ou deixe em branco para usar o padrão.',
++  bashTitle: 'Shell',
++  bashDescription: 'Limita todos os comandos que o agente executa.',
++  bashTimeoutMs: 'Tempo limite de comando (ms)',
++  bashTimeoutMsHint: 'Quanto tempo um comando pode executar antes de ser encerrado.',
++  bashMaxOutputBytes: 'Limite de saída por stream (bytes)',
++  bashMaxOutputBytesHint: 'Saída além disso transborda para um arquivo temporário em vez de ser perdida.',
++  agentLoopTitle: 'Loop do agente',
++  agentLoopDescription: 'Como o agente despacha chamadas de ferramentas.',
++  agentLoopMaxParallel: 'Chamadas de ferramentas em paralelo',
++  agentLoopMaxParallelHint: 'Limite superior de chamadas seguras em paralelo em execução simultaneamente em uma etapa.',
++  webSearchTitle: 'Busca na web',
++  webSearchDescription: 'O provedor de busca DeepSeek.',
++  webSearchApiKey: 'API key',
++  webSearchApiKeyHint: 'Armazenado fora do arquivo de configurações. Deixe em branco para manter a chave atual.',
++  webSearchApiKeySet: 'Uma chave está configurada.',
++  webSearchApiKeyUnset: 'Nenhuma chave está configurada; a busca está indisponível até que uma seja.',
++  webSearchBaseUrl: 'Endpoint',
++  webSearchBaseUrlHint: 'Deixe em branco para usar o padrão do provedor.',
++  webSearchMaxUses: 'Máximo de buscas por requisição',
++  webSearchMaxUsesHint: 'Quantas vezes uma requisição pode buscar antes de ter que responder.',
++}
++
+ /** Simplified Chinese copy. */
+ export const zh: Record<PluginsSettingsLocaleKey, string> = {
+   nav: '插件',
+diff --git a/packages/client/ui-sidebar/src/client/index.ts b/packages/client/ui-sidebar/src/client/index.ts
+index 5b8ac288f7..e70d05db23 100644
+--- a/packages/client/ui-sidebar/src/client/index.ts
++++ b/packages/client/ui-sidebar/src/client/index.ts
+@@ -4,7 +4,7 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ import type { SidebarRootInjected } from './contract/slots.ts'
+ import { SidebarRoot } from './SidebarRoot.tsx'
+-import { en, zh, type SidebarKey } from './locales.ts'
++import { en, pt, zh, type SidebarKey } from './locales.ts'
+ 
+ export type {
+   SidebarBrandMarkOwnerProps, SidebarBrandNameOwnerProps, SidebarFooterActionOwnerProps,
+@@ -29,7 +29,7 @@ export const inject = ['slots', 'layout', 'sessions', 'workspaces', 'locale']
+  * @param ctx - Client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-sidebar: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-sidebar: dictionaries')
+ 
+   const injectProps = (): SidebarRootInjected => ({
+     // The shell's New Session button rides the runtime's shared action
+diff --git a/packages/client/ui-sidebar/src/client/locales.ts b/packages/client/ui-sidebar/src/client/locales.ts
+index 8cf5ac6d7b..3b12b47660 100644
+--- a/packages/client/ui-sidebar/src/client/locales.ts
++++ b/packages/client/ui-sidebar/src/client/locales.ts
+@@ -18,3 +18,11 @@ export const en = {
+   'toggle.open': 'Open sidebar',
+   'toggle.collapse': 'Collapse sidebar',
+ } satisfies Record<SidebarKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'session.new': 'Nova sessão',
++  'session.new.label': 'Nova sessão',
++  'toggle.open': 'Abrir barra lateral',
++  'toggle.collapse': 'Recolher barra lateral',
++} satisfies Record<SidebarKey, string>
+diff --git a/packages/client/ui-skill/src/client/index.ts b/packages/client/ui-skill/src/client/index.ts
+index 738034e4e8..303dc16b90 100644
+--- a/packages/client/ui-skill/src/client/index.ts
++++ b/packages/client/ui-skill/src/client/index.ts
+@@ -36,7 +36,7 @@ import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-
+ // Type-only: pulls the locale plugin's Context merge (ctx.locale).
+ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ import { SkillRow } from './SkillRow.tsx'
+-import { en, NS, zh, type SkillKey } from './locales.ts'
++import { en, NS, pt, zh, type SkillKey } from './locales.ts'
+ 
+ declare module '@deepseek-ai/dsh-client-ui-slots' {
+   interface LocaleNamespaceMap {
+@@ -61,7 +61,7 @@ export const inject = ['inputTriggers', 'connection', 'sessions', 'slots', 'loca
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-skill: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-skill: dictionaries')
+   ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
+     { name: 'tool.call.toolview', key: 'skill', locale: NS },
+     SkillRow,
+diff --git a/packages/client/ui-skill/src/client/locales.ts b/packages/client/ui-skill/src/client/locales.ts
+index 40ef78dea5..d9086f23b6 100644
+--- a/packages/client/ui-skill/src/client/locales.ts
++++ b/packages/client/ui-skill/src/client/locales.ts
+@@ -23,3 +23,12 @@ export const en = {
+   'row.instructions': 'Instructions',
+   'menu.userOnly': 'user-only',
+ } satisfies Record<SkillKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'row.running': 'Carregando skill',
++  'row.failed': 'Falha ao carregar skill',
++  'row.stopped': 'Carregamento do skill interrompido',
++  'row.instructions': 'Instruções',
++  'menu.userOnly': 'somente usuário',
++} satisfies Record<SkillKey, string>
+diff --git a/packages/client/ui-subagent/src/client/index.ts b/packages/client/ui-subagent/src/client/index.ts
+index ab53562d5a..40c1d50b6d 100644
+--- a/packages/client/ui-subagent/src/client/index.ts
++++ b/packages/client/ui-subagent/src/client/index.ts
+@@ -8,7 +8,7 @@ import {
+   SubagentReadOnlyComposer, type SubagentReadOnlyMatch,
+ } from './SubagentReadOnlyComposer.tsx'
+ import type {} from '@deepseek-ai/dsh-client-locale/client'
+-import { en, NS, zh, type SubagentKey } from './locales.ts'
++import { en, NS, pt, zh, type SubagentKey } from './locales.ts'
+ 
+ declare module '@deepseek-ai/dsh-client-ui-slots' {
+   interface LocaleNamespaceMap {
+@@ -44,7 +44,7 @@ function selectReadOnlySubagent(owner: ComposerChainProps): SubagentReadOnlyMatc
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-subagent: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-subagent: dictionaries')
+   const sessions = ctx.sessions
+   const catalogActions = (_parentSessionId: SessionId): SubagentCatalogInjected => ({
+     openChild(address: SubagentAddress) {
+diff --git a/packages/client/ui-subagent/src/client/locales.ts b/packages/client/ui-subagent/src/client/locales.ts
+index b9c56ea001..a27741a1bd 100644
+--- a/packages/client/ui-subagent/src/client/locales.ts
++++ b/packages/client/ui-subagent/src/client/locales.ts
+@@ -79,5 +79,43 @@ export const en: Record<SubagentKey, string> = {
+   'readonly.body': 'The parent session is offline; reopen it to continue sending messages.',
+ }
+ 
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt: Record<SubagentKey, string> = {
++  'diagnostic.corrupt': 'registro de sessão corrompido',
++  'diagnostic.unsupported': 'versão de registro de subagente não suportada',
++  'diagnostic.unavailable': 'registro de sessão temporariamente indisponível',
++  'duration.seconds': '{seconds}s',
++  'duration.minutes': '{minutes}m {seconds}s',
++  'duration.hours': '{hours}h {minutes}m {seconds}s',
++  'duration.days': '{days}d',
++  'duration.daysHours': '{days}d {hours}h',
++  'duration.months': '~{months}m',
++  'duration.monthsDays': '~{months}m {days}d',
++  'duration.years': '~{years}a',
++  'duration.yearsMonths': '~{years}a {months}m',
++  'duration.exactDays': '{days}d {hours}h {minutes}m {seconds}s',
++  'duration.exactTitle': 'Duração ativa total: {duration}',
++  'loading.label': 'Carregando subagentes…',
++  'loading.aria': 'Carregando subagentes',
++  'load.error': 'Não foi possível carregar subagentes',
++  'retry': 'Tentar novamente',
++  'mode.oneShot': 'one-shot',
++  'mode.continuable': 'continuable',
++  'activity.running': 'em execução',
++  'activity.inactive': 'não em execução',
++  'branch.collapse': 'Recolher descendentes de {label}',
++  'branch.expand': 'Expandir descendentes de {label}',
++  'count.total.one': '{count} subagente',
++  'count.total.other': '{count} subagentes',
++  'count.running.one': '{count} subagente em execução',
++  'count.running.other': '{count} subagentes em execução',
++  'switcher.aria': 'Alternar subagente: {title}',
++  'tree.aria': 'Sessões de subagente',
++  'readonly.oneShot.title': 'Registro one-shot de subagente',
++  'readonly.title': 'Este subagente está apenas para leitura por enquanto',
++  'readonly.oneShot.body': 'Tarefas one-shot não aceitam follow-ups; revise o registro de execução completo aqui.',
++  'readonly.body': 'A sessão pai está offline; reabra-a para continuar enviando mensagens.',
++}
++
+ /** Key domain of the `subagent` namespace (zh is the source of truth). */
+ export type SubagentKey = keyof typeof zh
+diff --git a/packages/client/ui-theme/src/client/index.ts b/packages/client/ui-theme/src/client/index.ts
+index 8d9d8ac6b1..66b5dfae11 100644
+--- a/packages/client/ui-theme/src/client/index.ts
++++ b/packages/client/ui-theme/src/client/index.ts
+@@ -19,7 +19,7 @@ import type { AppearanceRowInjected } from './AppearanceRow.tsx'
+ import { AppearanceRow } from './AppearanceRow.tsx'
+ import { createAppearanceRowStore } from './settings-store.ts'
+ import { installThemeStyles } from './styles.ts'
+-import { en, zh, type ThemeKey } from './locales.ts'
++import { en, pt, zh, type ThemeKey } from './locales.ts'
+ import {
+   DEFAULT_PREFERENCE, isThemePreference, THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE,
+   type ThemePreference, type ThemeSettings,
+@@ -388,7 +388,7 @@ export function apply(ctx: ClientContext): void {
+   const theme = new ThemeRuntime(ctx, host)
+   ctx.provide('theme', theme)
+ 
+-  ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en }), 'ui-theme: settings row dictionaries')
++  ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en, pt }), 'ui-theme: settings row dictionaries')
+ 
+   const store = createAppearanceRowStore()
+   let bound: BoundActions<typeof store> | undefined
+diff --git a/packages/client/ui-theme/src/client/locales.ts b/packages/client/ui-theme/src/client/locales.ts
+index 6df56ceb96..c57b5f8781 100644
+--- a/packages/client/ui-theme/src/client/locales.ts
++++ b/packages/client/ui-theme/src/client/locales.ts
+@@ -18,3 +18,11 @@ export const en = {
+   'appearance.dark': 'Dark',
+   'appearance.system': 'System',
+ } satisfies Record<ThemeKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'appearance.title': 'Aparência',
++  'appearance.light': 'Claro',
++  'appearance.dark': 'Escuro',
++  'appearance.system': 'Sistema',
++} satisfies Record<ThemeKey, string>
+diff --git a/packages/client/ui-trajectory/src/client/index.ts b/packages/client/ui-trajectory/src/client/index.ts
+index ef789dce30..b77d564eb5 100644
+--- a/packages/client/ui-trajectory/src/client/index.ts
++++ b/packages/client/ui-trajectory/src/client/index.ts
+@@ -10,7 +10,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ // owning package) must be in the program for the register calls to type.
+ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+ import { createTrajectoryDurationStore } from './duration-store.ts'
+-import { en, NS, zh } from './locales.ts'
++import { en, NS, pt, zh } from './locales.ts'
+ import { registerTrajectoryAssistantDefinition } from './trajectory-assistant-definition.ts'
+ import { registerTrajectoryCompactionDefinitions } from './trajectory-compaction-definition.ts'
+ import { registerTrajectoryMessageDefinitions } from './trajectory-message-definitions.ts'
+@@ -28,7 +28,7 @@ export const inject = ['slots', 'conversationEvents', 'conversationViews', 'sess
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: Context): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-trajectory: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-trajectory: dictionaries')
+   // Registration-time text (the view tab label) reads through the bound
+   // translate as a thunk, so it follows the active locale without
+   // re-registration.
+diff --git a/packages/client/ui-trajectory/src/client/locales.ts b/packages/client/ui-trajectory/src/client/locales.ts
+index f8adbde640..5ab1e9c3be 100644
+--- a/packages/client/ui-trajectory/src/client/locales.ts
++++ b/packages/client/ui-trajectory/src/client/locales.ts
+@@ -62,3 +62,21 @@ export const en: Record<TrajectoryKey, string> = {
+   'toolbar.search': 'Search trajectory',
+   'toolbar.searchPlaceholder': 'Search',
+ }
++
++/** Brazilian Portuguese dictionary. */
++export const pt: Record<TrajectoryKey, string> = {
++  'view.trajectory': 'Trajetória',
++  'toolbar.aria': 'Barra de ferramentas da trajetória',
++  'toolbar.duration': 'Duração',
++  'toolbar.useActualDuration': 'Usar duração real',
++  'toolbar.useEqualWidth': 'Usar operações de largura igual',
++  'toolbar.actualTime': 'Tempo real',
++  'toolbar.turns': 'Turnos',
++  'toolbar.expandTurns': 'Expandir turnos',
++  'toolbar.collapseTurns': 'Recolher turnos',
++  'toolbar.calls': 'Chamadas',
++  'toolbar.expandCalls': 'Expandir chamadas',
++  'toolbar.collapseCalls': 'Recolher chamadas',
++  'toolbar.search': 'Pesquisar trajetória',
++  'toolbar.searchPlaceholder': 'Pesquisar',
++}
+diff --git a/packages/client/ui-user-questions/src/client/index.ts b/packages/client/ui-user-questions/src/client/index.ts
+index 20f3c37f12..805f6cbdf4 100644
+--- a/packages/client/ui-user-questions/src/client/index.ts
++++ b/packages/client/ui-user-questions/src/client/index.ts
+@@ -18,7 +18,7 @@ import type { ComposerChainProps } from '@deepseek-ai/dsh-client-ui-conversation
+ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ import type { QuestionWait } from './contract/slots.ts'
+ import { QuestionComposer } from './QuestionComposer.tsx'
+-import { en, zh, type QuestionKey } from './locales.ts'
++import { en, pt, zh, type QuestionKey } from './locales.ts'
+ 
+ export { PendingQuestion } from './contract/slots.ts'
+ export type {
+@@ -51,7 +51,7 @@ function selectQuestion({ interactions }: ComposerChainProps): QuestionWait | nu
+  * @param ctx - client root context.
+  */
+ export function apply(ctx: ClientContext): void {
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-user-questions: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-user-questions: dictionaries')
+ 
+   ctx.slots.inject('conversation.composer', () => ctx.slots.register(
+     { name: 'conversation.composer', select: selectQuestion, locale: NS },
+diff --git a/packages/client/ui-user-questions/src/client/locales.ts b/packages/client/ui-user-questions/src/client/locales.ts
+index b3c4232c25..d0d32c7ce2 100644
+--- a/packages/client/ui-user-questions/src/client/locales.ts
++++ b/packages/client/ui-user-questions/src/client/locales.ts
+@@ -40,3 +40,22 @@ export const en = {
+   'plan.decline': 'Refuse',
+   'plan.discuss': 'Chat about it',
+ } satisfies Record<QuestionKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'error.incomplete': 'Por favor, conclua esta pergunta primeiro.',
++  'error.unanswered': 'Selecione uma opção ou insira uma resposta personalizada.',
++  'nav.prev': 'Pergunta anterior',
++  'nav.next': 'Próxima pergunta',
++  'nav.minimize': 'Recolher o cartão de pergunta',
++  'nav.maximize': 'Expandir o cartão de pergunta',
++  'nav.cancel': 'Dispensar todas as perguntas',
++  'option.recommended': 'Recomendado',
++  'custom.placeholder': 'Digite sua resposta',
++  'action.skip': 'Pular esta pergunta',
++  'action.next': 'Próxima',
++  'plan.header': 'Revisão do plano',
++  'plan.approve': 'Aprovar',
++  'plan.decline': 'Recusar',
++  'plan.discuss': 'Conversar sobre isso',
++} satisfies Record<QuestionKey, string>
+diff --git a/packages/client/ui-workflow-run/src/client/index.ts b/packages/client/ui-workflow-run/src/client/index.ts
+index 09cc4059bf..bb7b52dcf3 100644
+--- a/packages/client/ui-workflow-run/src/client/index.ts
++++ b/packages/client/ui-workflow-run/src/client/index.ts
+@@ -4,7 +4,7 @@ import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/c
+ import type {} from '@deepseek-ai/dsh-client-locale/client'
+ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+ import { WorkflowRunPanel, type WorkflowRunInjected } from './WorkflowRunPanel.tsx'
+-import { en, NS, type WorkflowRunKey, zh } from './locales.ts'
++import { en, NS, pt, type WorkflowRunKey, zh } from './locales.ts'
+ import { workflowRunDefinition } from './workflow-definition.ts'
+ 
+ declare module '@deepseek-ai/dsh-client-ui-slots' {
+@@ -20,7 +20,7 @@ export const inject = ['conversationEvents', 'slots', 'sessions', 'locale']
+ /** Register the workflow Definition, dictionary, and keyed Chat renderer. */
+ export function apply(ctx: ClientContext): void {
+   ctx.conversationEvents.register(workflowRunDefinition)
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workflow-run: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-workflow-run: dictionaries')
+   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
+     name: 'conversation.chat.node',
+     key: 'workflow-run',
+diff --git a/packages/client/ui-workflow-run/src/client/locales.ts b/packages/client/ui-workflow-run/src/client/locales.ts
+index 99d8c9691f..395c321d37 100644
+--- a/packages/client/ui-workflow-run/src/client/locales.ts
++++ b/packages/client/ui-workflow-run/src/client/locales.ts
+@@ -47,5 +47,27 @@ export const en: Record<WorkflowRunKey, string> = {
+   'status.interrupted': 'Interrupted',
+ }
+ 
++/** Brazilian Portuguese dictionary (same key set). */
++export const pt: Record<WorkflowRunKey, string> = {
++  'run.title': '{name}',
++  'run.members.one': '{count} membro',
++  'run.members.other': '{count} membros',
++  'run.empty': 'Nenhum membro iniciado',
++  'phase.unassigned': 'Sem fase',
++  'phase.empty': 'Nome de fase vazio',
++  'statusCount.running': 'Em andamento {count}',
++  'statusCount.completed': 'Concluído {count}',
++  'statusCount.failed': 'Falha {count}',
++  'statusCount.cancelled': 'Cancelado {count}',
++  'statusCount.interrupted': 'Interrompido {count}',
++  'member.empty': 'Nome de membro vazio',
++  'member.open': 'Abrir {name}',
++  'status.running': 'Em andamento',
++  'status.completed': 'Concluído',
++  'status.failed': 'Falha',
++  'status.cancelled': 'Cancelado',
++  'status.interrupted': 'Interrompido',
++}
++
+ /** Union of this namespace's dictionary keys. */
+ export type WorkflowRunKey = keyof typeof zh
+diff --git a/packages/client/ui-workspace/src/client/index.ts b/packages/client/ui-workspace/src/client/index.ts
+index 93269c22c1..abf9771a3b 100644
+--- a/packages/client/ui-workspace/src/client/index.ts
++++ b/packages/client/ui-workspace/src/client/index.ts
+@@ -17,7 +17,7 @@ import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contra
+ import { createWorkspaceViewStore } from './stores.ts'
+ import { WorkspaceBrowser } from './WorkspaceBrowser.tsx'
+ import { WorkspacePicker } from './WorkspacePicker.tsx'
+-import { en, zh, type WorkspaceKey } from './locales.ts'
++import { en, pt, zh, type WorkspaceKey } from './locales.ts'
+ 
+ export type {
+   DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected,
+@@ -54,7 +54,7 @@ export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection'
+ export function apply(ctx: ClientContext): void {
+   const connection = ctx.get('connection') as ConnectionHandle
+   const hostDescription = connection.hostDescription
+-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
++  ctx.effect(() => ctx.locale.register(NS, { zh, en, pt }), 'ui-workspace: dictionaries')
+ 
+   const searchSessions: WorkspaceBrowserInjected['searchSessions'] = async (query, signal) => {
+     const result = await ctx.sessions.search(query, signal)
+diff --git a/packages/client/ui-workspace/src/client/locales.ts b/packages/client/ui-workspace/src/client/locales.ts
+index c08fd931de..c1a7ff9772 100644
+--- a/packages/client/ui-workspace/src/client/locales.ts
++++ b/packages/client/ui-workspace/src/client/locales.ts
+@@ -138,3 +138,69 @@ export const en = {
+   'time.years': '{n}y',
+   'time.ago': '{t} ago',
+ } satisfies Record<WorkspaceKey, string>
++
++/** Brazilian Portuguese dictionary, checked complete against the zh key set. */
++export const pt = {
++  'group.ungrouped': 'Sem grupo',
++  'session.new': 'Nova Sessão',
++  'section.workspaces': 'Espaços de Trabalho',
++  'section.sessions': 'Sessões',
++  'viewOptions.label': 'Opções de visualização',
++  'groupBy.label': 'Agrupar por',
++  'groupBy.workspace': 'Espaço de trabalho',
++  'groupBy.flat': 'Em uma lista',
++  'orderBy.label': 'Ordenar por',
++  'orderBy.manual': 'Manual',
++  'orderBy.updated': 'Última atualização',
++  'sessions.expand': 'Mostrar mais {n} sessões',
++  'sessions.collapse': 'Mostrar menos',
++  'empty.none': 'Ainda sem sessões',
++  'empty.noMatches': 'Sem correspondências',
++  'workspace.add': 'Adicionar espaço de trabalho',
++  'search.sessions.aria': 'Pesquisar sessões',
++  'search.placeholder': 'Pesquisar sessões…',
++  'search.clear': 'Limpar pesquisa',
++  'search.results.aria': 'Resultados da pesquisa',
++  'search.pending': 'Pesquisando histórico de sessões…',
++  'search.unavailable': 'A pesquisa de conteúdo está temporariamente indisponível. Mostrando correspondências por nome.',
++  'search.noMatches': 'Nenhuma sessão correspondente',
++  'search.hasMore': 'Mostrando os primeiros {n} resultados. Refine sua pesquisa.',
++  'menu.addWorkspace': 'Adicionar espaço de trabalho…',
++  'picker.loading': 'Carregando espaços de trabalho…',
++  'conflict.named': 'Já existe um espaço de trabalho chamado "{name}".',
++  'folderError.title': 'Não foi possível abrir a pasta',
++  'folderError.retry': 'Escolher novamente',
++  'rename': 'Renomear',
++  'rename.workspace.title': 'Renomear espaço de trabalho',
++  'rename.session.title': 'Renomear sessão',
++  'field.workspaceName': 'Nome do espaço de trabalho',
++  'field.sessionName': 'Nome da sessão',
++  'delete.workspace': 'Excluir espaço de trabalho',
++  'delete.desc': 'Isso remove "{name}" da lista de espaços de trabalho. A pasta e os registros da sessão serão mantidos. Suas sessões aparecerão em "Sem grupo".',
++  'delete.pending': 'Excluindo espaço de trabalho…',
++  'menu.fork': 'Ramificar sessão',
++  'menu.archiveSession': 'Arquivar sessão',
++  'sessions.count.one': '{n} sessão',
++  'sessions.count.other': '{n} sessões',
++  'actions.workspace.aria': 'Ações do espaço de trabalho para {name}',
++  'actions.session.aria': 'Ações da sessão para {name}',
++  'actions.newSession.aria': 'Nova sessão em {name}',
++  'status.running': 'Em execução',
++  'status.subagentsRunning.one': '{n} subagente em execução',
++  'status.subagentsRunning.other': '{n} subagentes em execução',
++  'status.idle': 'Ocioso',
++  'status.waitingApproval': 'Aguardando aprovação',
++  'status.planReview': 'Plano aguardando revisão',
++  'status.waitingAnswer': 'Aguardando resposta',
++  'status.completed': 'Concluído',
++  'hover.created': 'Criado em {time}',
++  'hover.copied': 'Copiado',
++  'date.ymd': '{y}-{m}-{d}',
++  'time.now': 'agora',
++  'time.minutes': '{n}min',
++  'time.hours': '{n}h',
++  'time.days': '{n}d',
++  'time.months': '{n}m',
++  'time.years': '{n}a',
++  'time.ago': '{t} atrás',
++} satisfies Record<WorkspaceKey, string>
