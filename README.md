@@ -37,8 +37,8 @@
 - [Desenvolvimento](#desenvolvimento)
 - [FAQ / Solução de problemas](#faq--solução-de-problemas)
 - [Contribuindo](#contribuindo)
+- [Nota sobre IA](#nota-sobre-ia)
 - [Licença](#licença)
-- [Agradecimentos](#agradecimentos)
 
 ## Sobre
 
@@ -101,7 +101,7 @@ Diferente de traduções parciais, este projeto entrega **dicionários completos
 | **Git** | `>= 2.30` (`git apply`) |
 
 > [!NOTE]
-> O patch é regenerado contra o `main` do DSH. Se `git apply` falhar após atualizar o DSH, abra uma issue com o hash do commit do DSH.
+> O patch é regenerado contra o `main` do DSH. Se `git apply` falhar após atualizar o DSH, faça um fork e regenere o patch localmente a partir do commit do DSH que você utiliza.
 
 ## 🚀 Instalação
 
@@ -277,7 +277,7 @@ pnpm run build
 ## ❓ FAQ / Solução de problemas
 
 **`git apply` falhou com `patch does not apply`?**
-O DSH avançou desde que o patch foi gerado. Atualize este repo (`git pull`) e tente novamente. Se persistir, abra uma issue informando o commit do DSH (`git rev-parse HEAD` no `deepseek-harness`).
+O DSH avançou desde que o patch foi gerado. Atualize este repo (`git pull`) e tente novamente. Se persistir, faça um fork e regenere o patch localmente — informe o commit do DSH (`git rev-parse HEAD` no `deepseek-harness`) no seu fork.
 
 **`pnpm run build` falhou?**
 Garanta Node 22+ e `pnpm install` limpo. O erro mais comum é `ERR_PNPM_NO_IMPORTER_MANIFEST` — rode `pnpm install` na raiz do DSH.
@@ -292,24 +292,18 @@ git -C /caminho/para/deepseek-harness apply --check ../pt-br-dsh/pt-br.patch
 ```
 
 **Posso contribuir com correções de tradução?**
-Sim — veja [Contribuindo](#-contribuindo).
+Este repo não aceita Issues/PRs — faça um fork e aplique as correções no seu fork. Veja [Contribuindo](#contribuindo).
 
 ## 🤝 Contribuindo
 
-Contribuições são bem-vindas! Para correções de tradução ou novos namespaces:
+Este é um projeto pessoal e **não recebe Issues ou Pull Requests**.
 
-1. Fork este repo e crie um branch (`fix/traducao-conversation`)
-2. Edite os `pt`/`locales.ts` relevantes — mantenha o tom consistente com o `zh`/`en`
-3. Garanta `pnpm run build` sem erros de tipo (`satisfies Record<ZhKey, string>`)
-4. Abra um PR descrevendo o escopo e, se possível, anexe screenshot
+Se quiser corrigir traduções, adaptar para uma versão mais nova do DSH ou personalizar, faça um **fork** e mantenha sua própria cópia — o patch é aberto e livre para isso.
 
-Para bugs de instalação/undo, inclua OS, versão do Node/pnpm e hash do commit do DSH.
+## 🤖 Nota sobre IA
+
+Este projeto foi criado com assistência de IA **utilizando o próprio DeepSeek Harness (DSH)** como ambiente de desenvolvimento, com diversos modelos ao longo do processo — do **DeepSeek V4 Flash** a outros modelos abertos.
 
 ## 📄 Licença
 
 [MIT](LICENSE) — mesmo licenciamento do DeepSeek Harness. Sinta-se livre para forkar e adaptar.
-
-## 🙏 Agradecimentos
-
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) pela plataforma open-source
-- Comunidade de tradutores pt-BR — sugestões via Issues/PRs são muito apreciadas
