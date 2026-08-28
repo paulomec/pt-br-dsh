@@ -7,7 +7,8 @@ param(
   [string]$Branch = 'main'
 )
 
-$ErrorActionPreference = 'Stop'
+# Continue em vez de Stop: comandos nativos (git/pnpm) escrevem em stderr e com Stop viram erro fatal
+$ErrorActionPreference = 'Continue'
 try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($true) } catch { }
 
 $githubRepo = 'https://github.com/paulomec/pt-br-dsh.git'
@@ -16,16 +17,16 @@ $workDir = Join-Path $env:TEMP 'pt-br-dsh-install'
 $patchPath = Join-Path $workDir 'pt-br.patch'
 
 Write-Host "+----------------------------------------------+"
-Write-Host "|  pt-br-dsh: instalação pelo GitHub          |"
+Write-Host "|  pt-br-dsh: instalacao pelo GitHub           |"
 Write-Host "+----------------------------------------------+"
 Write-Host ""
 
 # Step 0: Clone from GitHub
 Write-Host "[1/4] Baixando do GitHub..." -ForegroundColor Cyan
 if (Test-Path $workDir) { Remove-Item $workDir -Recurse -Force }
-git clone --depth 1 --branch $Branch $githubRepo $workDir 2>&1
-if (-not (Test-Path $patchPath)) {
-  Write-Host "ERRO: patch não encontrado em $patchPath" -ForegroundColor Red
+& git clone --depth 1 --branch $Branch $githubRepo $workDir 2>$null
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $patchPath)) {
+  Write-Host "ERRO: falha ao clonar ou patch nao encontrado em $patchPath" -ForegroundColor Red
   exit 1
 }
 Write-Host "  Patch baixado." -ForegroundColor Green
@@ -41,7 +42,7 @@ if ($DshPath -eq '') {
 }
 
 if (-not (Test-Path $DshPath)) {
-  Write-Host "ERRO: diretório DSH não encontrado em $DshPath" -ForegroundColor Red
+  Write-Host "ERRO: diretorio DSH nao encontrado em $DshPath" -ForegroundColor Red
   exit 1
 }
 
@@ -50,24 +51,26 @@ Write-Host ""
 Write-Host "[2/4] Aplicando patch..." -ForegroundColor Cyan
 Push-Location $DshPath
 try {
-  git apply $patchPath 2>&1
+  & git apply $patchPath 2>$null
   if ($LASTEXITCODE -ne 0) {
-    Write-Host "Falha ao aplicar patch. Talvez já esteja aplicado." -ForegroundColor Red
+    Write-Host "Falha ao aplicar patch. Talvez ja esteja aplicado." -ForegroundColor Red
     Pop-Location
     exit 1
   }
   Write-Host "  Patch aplicado." -ForegroundColor Green
 } finally {
-  Pop-Location
+  if ((Get-Location).Path -ne $DshPath) { Pop-Location -ErrorAction SilentlyContinue }
+  else { Pop-Location }
 }
 
 # Step 3: Install deps
 Write-Host ""
-Write-Host "[3/4] Instalando dependências..." -ForegroundColor Cyan
+Write-Host "[3/4] Instalando dependencias..." -ForegroundColor Cyan
 Push-Location $DshPath
 try {
-  pnpm install
-  Write-Host "  Dependências instaladas." -ForegroundColor Green
+  & pnpm install
+  if ($LASTEXITCODE -ne 0) { Write-Host "Falha no pnpm install" -ForegroundColor Red; exit 1 }
+  Write-Host "  Dependencias instaladas." -ForegroundColor Green
 } finally {
   Pop-Location
 }
@@ -77,16 +80,17 @@ Write-Host ""
 Write-Host "[4/4] Fazendo build..." -ForegroundColor Cyan
 Push-Location $DshPath
 try {
-  pnpm run build
+  & pnpm run build
+  if ($LASTEXITCODE -ne 0) { Write-Host "Falha no build" -ForegroundColor Red; exit 1 }
   Write-Host ""
   Write-Host "+----------------------------------------------+"
-  Write-Host "|  Instalação concluída!                       |"
+  Write-Host "|  Instalacao concluida!                       |"
   Write-Host "|                                              |"
   Write-Host "|  Para rodar: cd $DshPath                    |"
   Write-Host "|  pnpm dsh web                                 |"
   Write-Host "|                                              |"
-  Write-Host "|  Selecione Português (BR) em:                |"
-  Write-Host "|  Configurações > Geral > Idioma              |"
+  Write-Host "|  Selecione Portugues (BR) em:                |"
+  Write-Host "|  Configuracoes > Geral > Idioma              |"
   Write-Host "+----------------------------------------------+"
 } finally {
   Pop-Location
