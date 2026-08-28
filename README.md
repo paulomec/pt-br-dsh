@@ -112,7 +112,9 @@ Diferente de traduções parciais, este projeto entrega **dicionários completos
 **Windows (PowerShell):**
 
 ```powershell
-powershell -Command "iwr -useb https://raw.githubusercontent.com/paulomec/pt-br-dsh/main/scripts/install.ps1 | iex" -ArgumentList "C:/caminho/para/deepseek-harness"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/paulomec/pt-br-dsh/main/scripts/install.ps1 -OutFile $env:TEMP\ptbr-install.ps1; & $env:TEMP\ptbr-install.ps1 -DshPath 'C:/caminho/para/deepseek-harness'"
+# Com branch alternativo:
+# powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/paulomec/pt-br-dsh/main/scripts/install.ps1 -OutFile $env:TEMP\ptbr-install.ps1; & $env:TEMP\ptbr-install.ps1 -DshPath 'C:/caminho/para/deepseek-harness' -Branch main"
 ```
 
 **Linux / macOS:**
@@ -216,7 +218,7 @@ bash scripts/uninstall.sh /caminho/para/deepseek-harness --force
 
 ```powershell
 # Windows
-powershell -Command "iwr -useb https://raw.githubusercontent.com/paulomec/pt-br-dsh/main/scripts/uninstall.ps1 | iex" -DshPath "C:/caminho/para/deepseek-harness"
+powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/paulomec/pt-br-dsh/main/scripts/uninstall.ps1 -OutFile $env:TEMP\ptbr-uninstall.ps1; & $env:TEMP\ptbr-uninstall.ps1 -DshPath 'C:/caminho/para/deepseek-harness' -Force"
 ```
 ```bash
 # Linux / macOS
