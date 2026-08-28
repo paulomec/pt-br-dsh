@@ -7,7 +7,7 @@ set -euo pipefail
 GITHUB_REPO="https://github.com/paulomec/pt-br-dsh.git"
 WORK_DIR="/tmp/pt-br-dsh-install"
 PATCH_PATH="$WORK_DIR/pt-br.patch"
-BRANCH="${BRANCH:-master}"
+BRANCH="${BRANCH:-main}"
 
 echo "╔══════════════════════════════════════════════╗"
 echo "║  pt-br-dsh: instalação pelo GitHub          ║"
