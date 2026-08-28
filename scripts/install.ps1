@@ -1,22 +1,23 @@
-# install.ps1 — Instala pt-BR no DSH clonando do GitHub
+# install.ps1 - Instala pt-BR no DSH clonando do GitHub
 # Uso: .\install.ps1 -DshPath "C:\Users\seuusuario\deepseek-harness"
 # Ou sem argumentos: .\install.ps1
 
 param(
   [string]$DshPath = '',
-  [string]$Branch = 'master'
+  [string]$Branch = 'main'
 )
 
 $ErrorActionPreference = 'Stop'
+try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($true) } catch { }
 
 $githubRepo = 'https://github.com/paulomec/pt-br-dsh.git'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $workDir = Join-Path $env:TEMP 'pt-br-dsh-install'
 $patchPath = Join-Path $workDir 'pt-br.patch'
 
-Write-Host "╔══════════════════════════════════════════════╗"
-Write-Host "║  pt-br-dsh: instalação pelo GitHub          ║"
-Write-Host "╚══════════════════════════════════════════════╝"
+Write-Host "+----------------------------------------------+"
+Write-Host "|  pt-br-dsh: instalação pelo GitHub          |"
+Write-Host "+----------------------------------------------+"
 Write-Host ""
 
 # Step 0: Clone from GitHub
@@ -78,15 +79,15 @@ Push-Location $DshPath
 try {
   pnpm run build
   Write-Host ""
-  Write-Host "╔══════════════════════════════════════════════╗"
-  Write-Host "║  Instalação concluída!                       ║"
-  Write-Host "║                                              ║"
-  Write-Host "║  Para rodar: cd $DshPath                    ║"
-  Write-Host "║  pnpm dsh web                                 ║"
-  Write-Host "║                                              ║"
-  Write-Host "║  Selecione Português (BR) em:                ║"
-  Write-Host "║  Configurações > Geral > Idioma              ║"
-  Write-Host "╚══════════════════════════════════════════════╝"
+  Write-Host "+----------------------------------------------+"
+  Write-Host "|  Instalação concluída!                       |"
+  Write-Host "|                                              |"
+  Write-Host "|  Para rodar: cd $DshPath                    |"
+  Write-Host "|  pnpm dsh web                                 |"
+  Write-Host "|                                              |"
+  Write-Host "|  Selecione Português (BR) em:                |"
+  Write-Host "|  Configurações > Geral > Idioma              |"
+  Write-Host "+----------------------------------------------+"
 } finally {
   Pop-Location
 }

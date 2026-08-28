@@ -1,4 +1,4 @@
-﻿# apply-and-build.ps1 â€” Aplica o patch pt-BR e faz build do DSH
+# apply-and-build.ps1 â€” Aplica o patch pt-BR e faz build do DSH
 # Uso: .\scripts\apply-and-build.ps1 -DshPath "C:\Users\seuusuario\deepseek-harness"
 # Ou sem argumentos (procura o DSH no diretÃ³rio irmÃ£o): .\scripts\apply-and-build.ps1
 
@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($true) } catch { }
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projDir  = Split-Path -Parent $scriptDir
 $patchFile = Join-Path $projDir 'pt-br.patch'
@@ -32,7 +33,7 @@ if (-not (Test-Path $DshPath)) {
   exit 1
 }
 
-Write-Host "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+Write-Host "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•-"
 Write-Host "â•‘  pt-br-dsh: aplicando e buildando           â•‘"
 Write-Host "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
 Write-Host ""
@@ -71,7 +72,7 @@ Push-Location $DshPath
 try {
   pnpm run build
   Write-Host ""
-  Write-Host "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
+  Write-Host "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•-"
   Write-Host "â•‘  Build concluÃ­do com sucesso!                â•‘"
 Write-Host "â•‘                                              â•‘"
   Write-Host "â•‘  Para rodar: cd $DshPath                    â•‘"
